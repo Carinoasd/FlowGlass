@@ -60,7 +60,7 @@ const DEFAULTS = {
     notes:    { on: false },
     pomo:     { on: true, work: 25, rest: 5 },
     weather:  { on: false, place: '', lat: null, lon: null },
-    clock2:   { on: false, size: 100 },
+    clock2:   { on: false, size: 100, card: true },
   },
   layout: {},
 };
@@ -524,8 +524,11 @@ function applyClockStyle() {
   inner.classList.toggle('no-card', c.card === false);
   $('clockDate').hidden = c.date === false;
   // 獨立翻頁小時鐘
+  const c2 = S.widgets.clock2;
   const inner2 = document.querySelector('#w-clock2 .w-inner');
-  inner2.style.zoom = (S.widgets.clock2.size ?? 100) / 100;
+  inner2.style.zoom = (c2.size ?? 100) / 100;
+  inner2.classList.toggle('glass', c2.card !== false);
+  inner2.classList.toggle('no-card', c2.card === false);
 }
 
 function buildAnalogTicks() {
@@ -1180,6 +1183,7 @@ function reflectSettings() {
   $('tglCkAnalog').checked = !!p.analog;
   $('tglClock2').checked = S.widgets.clock2.on;
   $('clock2Size').value = S.widgets.clock2.size ?? 100;
+  $('tglClock2Card').checked = S.widgets.clock2.card !== false;
   $('clockSizeSlider').value = S.widgets.clock.size ?? 100;
   $('tglClockCard').checked = S.widgets.clock.card !== false;
   $('tglDate').checked = S.widgets.clock.date !== false;
@@ -1289,6 +1293,10 @@ function initSettingsPanel() {
   wtoggle('tglClock2', 'clock2');
   bind('clock2Size', 'input', e => {
     S.widgets.clock2.size = +e.target.value;
+    applyClockStyle(); saveSettings();
+  });
+  bind('tglClock2Card', 'change', e => {
+    S.widgets.clock2.card = e.target.checked;
     applyClockStyle(); saveSettings();
   });
   bind('clockSizeSlider', 'input', e => {
