@@ -43,12 +43,13 @@ function festivalOf(month, day, date) {
 }
 
 // 回傳 { text: '農曆七月初二', festival: '中秋節'|null }
-export function lunarInfo(date = new Date()) {
+// simplified = true 時字首用「农历」
+export function lunarInfo(date = new Date(), simplified = false) {
   try {
     const { month, day } = parts(date);
     const dayName = DAY_NAMES[day - 1] || String(day);
     return {
-      text: `農曆${month}${dayName}`,
+      text: `${simplified ? '农历' : '農曆'}${month}${dayName}`,
       festival: festivalOf(month, day, date),
     };
   } catch {

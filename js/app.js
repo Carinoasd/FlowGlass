@@ -1,5 +1,5 @@
 // ============ 流璃 FlowGlass — 主程式 ============
-import { t, setLang, getLang, detectLang, applyI18n } from './i18n.js';
+import { t, setLang, getLang, detectLang, applyI18n, UI_LOCALE } from './i18n.js';
 import { putWallpaper, getWallpaper, getAllWallpapers, deleteWallpaper } from './db.js';
 import { lunarInfo } from './lunar.js';
 import { PRESETS, getPreset } from './presets.js';
@@ -561,7 +561,7 @@ function setFlip(id, val) {
 function tickClock() {
   const now = new Date();
   const c = S.widgets.clock;
-  const locale = getLang() === 'zh_TW' ? 'zh-Hant-TW' : 'en-US';
+  const locale = UI_LOCALE[getLang()] || 'en-US';
   const p = c.parts || { digital: true };
 
   if (p.digital || p.minimal) {
@@ -603,7 +603,7 @@ function tickClock() {
   if (c.lunar) {
     if (lastLunarDay !== now.getDate() || !lunarEl.textContent) {
       lastLunarDay = now.getDate();
-      const { text, festival } = lunarInfo(now);
+      const { text, festival } = lunarInfo(now, getLang() === 'zh_CN');
       lunarEl.textContent = text;
       if (festival) {
         const f = document.createElement('span');
@@ -624,8 +624,7 @@ function updateGreeting() {
             : h >= 18 && h < 23 ? 'greet.evening'
             : 'greet.night';
   const name = (S.widgets.greeting.name || '').trim();
-  const sep = getLang() === 'zh_TW' ? ',' : ', ';
-  $('greetingText').textContent = name ? t(key) + sep + name : t(key);
+  $('greetingText').textContent = name ? t(key) + t('greet.sep') + name : t(key);
 }
 
 /* ============================================================
@@ -636,9 +635,8 @@ let activeSuggest = -1;
 function engineUrl() {
   const id = S.widgets.search.engine;
   if (id === 'wikipedia') {
-    return getLang() === 'zh_TW'
-      ? 'https://zh.wikipedia.org/w/index.php?search='
-      : 'https://en.wikipedia.org/w/index.php?search=';
+    const sub = { zh_TW: 'zh', zh_CN: 'zh', ja: 'ja', ko: 'ko' }[getLang()] || 'en';
+    return `https://${sub}.wikipedia.org/w/index.php?search=`;
   }
   return ENGINES[id]?.url || ENGINES.google.url;
 }
@@ -1268,7 +1266,7 @@ function initSettingsPanel() {
       return;
     }
     try {
-      const lang = getLang() === 'zh_TW' ? 'zh' : 'en';
+      const lang = { zh_TW: 'zh', zh_CN: 'zh', ja: 'ja', ko: 'ko' }[getLang()] || 'en';
       const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=1&language=${lang}`);
       const d = await r.json();
       if (d.results && d.results[0]) {
