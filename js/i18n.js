@@ -1,0 +1,140 @@
+// 流璃 FlowGlass — i18n(繁中/英)
+const DICT = {
+  zh_TW: {
+    'settings.title': '設定',
+    'sec.wallpaper': '桌布',
+    'sec.glass': '玻璃效果',
+    'sec.theme': '主題色',
+    'sec.widgets': '元件',
+    'sec.layout': '版面',
+    'sec.lang': '語言',
+    'wp.upload': '上傳圖片或影片',
+    'wp.presets': '內建預設',
+    'wp.library': '我的桌布',
+    'wp.slideshow': '桌布輪播',
+    'wp.mode.newtab': '每次開新分頁換',
+    'wp.mode.interval': '定時輪換',
+    'wp.minutes': '分鐘',
+    'wp.dim': '背景暗度',
+    'glass.blur': '模糊',
+    'glass.opacity': '不透明度',
+    'glass.refract': '折射強度',
+    'glass.edge': '邊緣高光',
+    'glass.parallax': '滑鼠視差',
+    'glass.entrance': '入場動畫',
+    'theme.auto': '自動取色',
+    'theme.accent': '主題色',
+    'w.clock': '時鐘',
+    'w.seconds': '顯示秒數',
+    'w.h24': '24 小時制',
+    'w.lunar': '農曆',
+    'w.greeting': '問候語',
+    'w.name': '你的名字',
+    'w.search': '搜尋列',
+    'w.history': '歷史建議',
+    'w.clearHistory': '清除搜尋紀錄',
+    'w.dock': '捷徑 Dock',
+    'w.notes': '快速筆記',
+    'w.pomo': '番茄鐘',
+    'layout.reset': '重設佈局',
+    'search.ph': '搜尋…',
+    'notes.ph': '隨手記點什麼…',
+    'dock.add': '新增捷徑',
+    'dock.edit': '編輯捷徑',
+    'dock.title': '名稱',
+    'dock.url': '網址',
+    'ok': '確定',
+    'cancel': '取消',
+    'pomo.work': '工作',
+    'pomo.rest': '休息',
+    'pomo.start': '開始',
+    'pomo.pause': '暫停',
+    'pomo.reset': '重設',
+    'greet.morning': '早安',
+    'greet.noon': '午安',
+    'greet.evening': '晚安',
+    'greet.night': '夜深了',
+  },
+  en: {
+    'settings.title': 'Settings',
+    'sec.wallpaper': 'Wallpaper',
+    'sec.glass': 'Glass',
+    'sec.theme': 'Theme',
+    'sec.widgets': 'Widgets',
+    'sec.layout': 'Layout',
+    'sec.lang': 'Language',
+    'wp.upload': 'Upload image or video',
+    'wp.presets': 'Presets',
+    'wp.library': 'My wallpapers',
+    'wp.slideshow': 'Slideshow',
+    'wp.mode.newtab': 'Every new tab',
+    'wp.mode.interval': 'Timed',
+    'wp.minutes': 'min',
+    'wp.dim': 'Dim',
+    'glass.blur': 'Blur',
+    'glass.opacity': 'Opacity',
+    'glass.refract': 'Refraction',
+    'glass.edge': 'Edge light',
+    'glass.parallax': 'Mouse parallax',
+    'glass.entrance': 'Entrance animation',
+    'theme.auto': 'Auto from wallpaper',
+    'theme.accent': 'Accent color',
+    'w.clock': 'Clock',
+    'w.seconds': 'Show seconds',
+    'w.h24': '24-hour',
+    'w.lunar': 'Lunar date',
+    'w.greeting': 'Greeting',
+    'w.name': 'Your name',
+    'w.search': 'Search bar',
+    'w.history': 'History suggestions',
+    'w.clearHistory': 'Clear search history',
+    'w.dock': 'Dock',
+    'w.notes': 'Quick notes',
+    'w.pomo': 'Pomodoro',
+    'layout.reset': 'Reset layout',
+    'search.ph': 'Search…',
+    'notes.ph': 'Jot something…',
+    'dock.add': 'Add shortcut',
+    'dock.edit': 'Edit shortcut',
+    'dock.title': 'Name',
+    'dock.url': 'URL',
+    'ok': 'OK',
+    'cancel': 'Cancel',
+    'pomo.work': 'Focus',
+    'pomo.rest': 'Break',
+    'pomo.start': 'Start',
+    'pomo.pause': 'Pause',
+    'pomo.reset': 'Reset',
+    'greet.morning': 'Good morning',
+    'greet.noon': 'Good afternoon',
+    'greet.evening': 'Good evening',
+    'greet.night': 'Late night',
+  },
+};
+
+let current = 'zh_TW';
+
+export function detectLang() {
+  return (navigator.language || '').toLowerCase().startsWith('zh') ? 'zh_TW' : 'en';
+}
+
+export function setLang(lang) {
+  current = DICT[lang] ? lang : 'zh_TW';
+  document.documentElement.lang = current === 'zh_TW' ? 'zh-Hant' : 'en';
+}
+
+export function getLang() { return current; }
+
+export function t(key) {
+  return DICT[current][key] ?? DICT.zh_TW[key] ?? key;
+}
+
+// 套用到所有 data-i18n / data-i18n-ph 節點
+export function applyI18n(root = document) {
+  root.querySelectorAll('[data-i18n]').forEach(el => {
+    el.textContent = t(el.dataset.i18n);
+  });
+  root.querySelectorAll('[data-i18n-ph]').forEach(el => {
+    el.placeholder = t(el.dataset.i18nPh);
+  });
+}

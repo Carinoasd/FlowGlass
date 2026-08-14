@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>流璃 FlowGlass</title>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="entrance edge refract parallax">
+
+<!-- SVG 濾鏡:液態玻璃折射鏈 (turbulence → displacement → blur → saturate) -->
+<svg id="fg-defs" width="0" height="0" aria-hidden="true">
+  <defs>
+    <filter id="fg-lens" x="-30%" y="-30%" width="160%" height="160%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.004" numOctaves="1" seed="7" result="n"/>
+      <feGaussianBlur in="n" stdDeviation="3" result="nb"/>
+      <feDisplacementMap id="fg-disp" in="SourceGraphic" in2="nb" scale="60" xChannelSelector="R" yChannelSelector="G" result="disp"/>
+      <feGaussianBlur id="fg-blur" in="disp" stdDeviation="14" result="bl"/>
+      <feColorMatrix in="bl" type="saturate" values="1.5"/>
+    </filter>
+  </defs>
+</svg>
+
+<!-- 桌布層 -->
+<div id="wallpaper">
+  <div id="wp-layer">
+    <div id="wp-preset"></div>
+    <img id="wp-img" alt="" hidden>
+    <video id="wp-video" muted loop autoplay playsinline hidden></video>
+  </div>
+  <div id="wp-dim"></div>
+</div>
+
+<!-- 元件舞台 -->
+<main id="stage">
+
+  <section class="widget" id="w-greeting" data-w="greeting" style="--delay:.05s">
+    <div class="w-inner">
+      <button class="drag-handle" title="拖拉移動">⠿</button>
+      <div id="greetingText" class="greeting-text"></div>
+    </div>
+  </section>
+
+  <section class="widget" id="w-clock" data-w="clock" style="--delay:.1s">
+    <div class="w-inner glass">
+      <button class="drag-handle" title="拖拉移動">⠿</button>
+      <div id="clockTime" class="clock-time">--:--</div>
+      <div id="clockDate" class="clock-date"></div>
+      <div id="clockLunar" class="clock-lunar"></div>
+    </div>
+  </section>
+
+  <section class="widget" id="w-search" data-w="search" style="--delay:.18s">
+    <div class="w-inner glass search-box">
+      <button class="drag-handle" title="拖拉移動">⠿</button>
+      <form id="searchForm" autocomplete="off">
+        <button type="button" id="engineBtn" class="engine-btn" title=""></button>
+        <input id="searchInput" type="text" data-i18n-ph="search.ph" placeholder="搜尋…">
+        <button type="submit" class="search-go" aria-label="search">
+          <svg viewBox="0 0 24 24" width="18" height="18"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Zm10 2.5-4.7-4.7"/></svg>
+        </button>
+      </form>
+      <ul id="engineMenu" class="engine-menu glass hidden"></ul>
+      <ul id="suggestList" class="suggest-list glass hidden"></ul>
+    </div>
+  </section>
+
+  <section class="widget" id="w-dock" data-w="dock" style="--delay:.26s">
+    <div class="w-inner glass dock">
+      <button class="drag-handle" title="拖拉移動">⠿</button>
+      <div id="dockGrid" class="dock-grid"></div>
+    </div>
+  </section>
+
+  <section class="widget" id="w-notes" data-w="notes" style="--delay:.34s">
+    <div class="w-inner glass notes">
+      <button class="drag-handle" title="拖拉移動">⠿</button>
+      <div class="w-title" data-i18n="w.notes">快速筆記</div>
+      <textarea id="notesArea" data-i18n-ph="notes.ph" placeholder="隨手記點什麼…"></textarea>
+    </div>
+  </section>
+
+  <section class="widget" id="w-pomo" data-w="pomo" style="--delay:.42s">
+    <div class="w-inner glass pomo">
+      <button class="drag-handle" title="拖拉移動">⠿</button>
+      <div class="w-title" data-i18n="w.pomo">番茄鐘</div>
+      <div class="pomo-ring-wrap">
+        <svg viewBox="0 0 120 120" class="pomo-svg">
+          <circle class="ring-bg" cx="60" cy="60" r="52"/>
+          <circle id="pomoRing" class="ring-fg" cx="60" cy="60" r="52"/>
+        </svg>
+        <div class="pomo-center">
+          <div id="pomoTime">25:00</div>
+          <div id="pomoPhase" data-i18n="pomo.work">工作</div>
+        </div>
+      </div>
+      <div class="pomo-ctrl">
+        <button id="pomoStart" class="mini-btn" data-i18n="pomo.start">開始</button>
+        <button id="pomoReset" class="mini-btn" data-i18n="pomo.reset">重設</button>
+      </div>
+      <div class="pomo-conf">
+        <label><span data-i18n="pomo.work">工作</span> <input id="pomoWork" type="number" min="1" max="120" value="25"></label>
+        <label><span data-i18n="pomo.rest">休息</span> <input id="pomoRest" type="number" min="1" max="60" value="5"></label>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- 設定按鈕 -->
+<button id="settingsBtn" class="glass fab" title="設定">
+  <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7Zm7.4-2.6c.05-.3.08-.6.08-.9s-.03-.6-.08-.9l2-1.6a.5.5 0 0 0 .12-.64l-1.9-3.3a.5.5 0 0 0-.6-.22l-2.4.96a7.3 7.3 0 0 0-1.55-.9l-.36-2.54a.5.5 0 0 0-.5-.43h-3.8a.5.5 0 0 0-.5.43l-.36 2.54c-.56.23-1.08.53-1.56.9l-2.4-.96a.5.5 0 0 0-.6.22l-1.9 3.3a.5.5 0 0 0 .13.64l2 1.6c-.05.3-.08.6-.08.9s.03.6.08.9l-2 1.6a.5.5 0 0 0-.12.64l1.9 3.3c.13.22.39.31.6.22l2.4-.96c.47.37 1 .67 1.55.9l.36 2.54c.04.25.25.43.5.43h3.8c.25 0 .46-.18.5-.43l.36-2.54c.56-.23 1.08-.53 1.55-.9l2.4.96c.22.09.48 0 .6-.22l1.9-3.3a.5.5 0 0 0-.12-.64l-2-1.6Z"/></svg>
+</button>
+
+<!-- 設定面板 -->
+<aside id="settingsPanel" class="glass hidden">
+  <header class="sp-head">
+    <h2 data-i18n="settings.title">設定</h2>
+    <button id="settingsClose" class="sp-close">✕</button>
+  </header>
+  <div class="sp-body">
+
+    <details open>
+      <summary data-i18n="sec.wallpaper">桌布</summary>
+      <div class="sp-row">
+        <label class="file-btn">
+          <input id="wpUpload" type="file" accept="image/*,video/mp4,video/webm" hidden>
+          <span data-i18n="wp.upload">上傳圖片或影片</span>
+        </label>
+      </div>
+      <div class="sp-label" data-i18n="wp.presets">內建預設</div>
+      <div id="presetGrid" class="thumb-grid"></div>
+      <div class="sp-label" data-i18n="wp.library">我的桌布</div>
+      <div id="libGrid" class="thumb-grid"></div>
+      <div class="sp-row toggle-row">
+        <span data-i18n="wp.slideshow">桌布輪播</span>
+        <input id="ssOn" type="checkbox" class="toggle">
+      </div>
+      <div class="sp-row" id="ssConf">
+        <select id="ssMode">
+          <option value="newtab" data-i18n="wp.mode.newtab">每次開新分頁換</option>
+          <option value="interval" data-i18n="wp.mode.interval">定時輪換</option>
+        </select>
+        <span class="inline-num"><input id="ssMinutes" type="number" min="1" max="720" value="10"> <span data-i18n="wp.minutes">分鐘</span></span>
+      </div>
+      <div class="sp-row slider-row">
+        <span data-i18n="wp.dim">背景暗度</span>
+        <input id="dimSlider" type="range" min="0" max="70" value="18">
+      </div>
+    </details>
+
+    <details open>
+      <summary data-i18n="sec.glass">玻璃效果</summary>
+      <div class="sp-row slider-row"><span data-i18n="glass.blur">模糊</span><input id="blurSlider" type="range" min="0" max="40" value="18"></div>
+      <div class="sp-row slider-row"><span data-i18n="glass.opacity">不透明度</span><input id="opacitySlider" type="range" min="2" max="45" value="14"></div>
+      <div class="sp-row slider-row"><span data-i18n="glass.refract">折射強度</span><input id="refractSlider" type="range" min="0" max="140" value="60"></div>
+      <div class="sp-row toggle-row"><span data-i18n="glass.edge">邊緣高光</span><input id="edgeToggle" type="checkbox" class="toggle" checked></div>
+      <div class="sp-row toggle-row"><span data-i18n="glass.parallax">滑鼠視差</span><input id="parallaxToggle" type="checkbox" class="toggle" checked></div>
+      <div class="sp-row toggle-row"><span data-i18n="glass.entrance">入場動畫</span><input id="entranceToggle" type="checkbox" class="toggle" checked></div>
+    </details>
+
+    <details open>
+      <summary data-i18n="sec.theme">主題色</summary>
+      <div class="sp-row toggle-row"><span data-i18n="theme.auto">自動取色</span><input id="autoColorToggle" type="checkbox" class="toggle" checked></div>
+      <div class="sp-row toggle-row"><span data-i18n="theme.accent">主題色</span><input id="accentPicker" type="color" value="#7ab8ff"></div>
+    </details>
+
+    <details open>
+      <summary data-i18n="sec.widgets">元件</summary>
+      <div class="sp-row toggle-row"><span data-i18n="w.clock">時鐘</span><input id="tglClock" type="checkbox" class="toggle" checked></div>
+      <div class="sp-row toggle-row sub"><span data-i18n="w.seconds">顯示秒數</span><input id="tglSeconds" type="checkbox" class="toggle"></div>
+      <div class="sp-row toggle-row sub"><span data-i18n="w.h24">24 小時制</span><input id="tglH24" type="checkbox" class="toggle" checked></div>
+      <div class="sp-row toggle-row sub"><span data-i18n="w.lunar">農曆</span><input id="tglLunar" type="checkbox" class="toggle" checked></div>
+      <div class="sp-row toggle-row"><span data-i18n="w.greeting">問候語</span><input id="tglGreeting" type="checkbox" class="toggle" checked></div>
+      <div class="sp-row sub"><span data-i18n="w.name">你的名字</span><input id="nameInput" type="text" maxlength="20"></div>
+      <div class="sp-row toggle-row"><span data-i18n="w.search">搜尋列</span><input id="tglSearch" type="checkbox" class="toggle" checked></div>
+      <div class="sp-row toggle-row sub"><span data-i18n="w.history">歷史建議</span><input id="tglHistory" type="checkbox" class="toggle" checked></div>
+      <div class="sp-row sub"><button id="clearHistoryBtn" class="mini-btn" data-i18n="w.clearHistory">清除搜尋紀錄</button></div>
+      <div class="sp-row toggle-row"><span data-i18n="w.dock">捷徑 Dock</span><input id="tglDock" type="checkbox" class="toggle" checked></div>
+      <div class="sp-row toggle-row"><span data-i18n="w.notes">快速筆記</span><input id="tglNotes" type="checkbox" class="toggle"></div>
+      <div class="sp-row toggle-row"><span data-i18n="w.pomo">番茄鐘</span><input id="tglPomo" type="checkbox" class="toggle"></div>
+    </details>
+
+    <details>
+      <summary data-i18n="sec.layout">版面</summary>
+      <div class="sp-row"><button id="resetLayoutBtn" class="mini-btn" data-i18n="layout.reset">重設佈局</button></div>
+    </details>
+
+    <details>
+      <summary data-i18n="sec.lang">語言</summary>
+      <div class="sp-row">
+        <select id="langSelect">
+          <option value="zh_TW">繁體中文</option>
+          <option value="en">English</option>
+        </select>
+      </div>
+    </details>
+
+    <div class="sp-about">流璃 FlowGlass v1.0 · Liquid Glass New Tab</div>
+  </div>
+</aside>
+
+<!-- Dock 新增/編輯 Modal -->
+<div id="modalBackdrop" class="modal-backdrop hidden">
+  <div class="modal glass">
+    <h3 id="modalTitle" data-i18n="dock.add">新增捷徑</h3>
+    <label><span data-i18n="dock.title">名稱</span><input id="modalName" type="text" maxlength="30"></label>
+    <label><span data-i18n="dock.url">網址</span><input id="modalUrl" type="text" placeholder="https://"></label>
+    <div class="modal-btns">
+      <button id="modalCancel" class="mini-btn" data-i18n="cancel">取消</button>
+      <button id="modalOk" class="mini-btn primary" data-i18n="ok">確定</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
