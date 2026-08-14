@@ -146,7 +146,7 @@ body.dragging * { cursor: grabbing !important; }
 #w-dock     { left: 50%; top: 60%; transform: translateX(-50%); }
 #w-notes    { left: 4%;  top: 12%; }
 #w-pomo     { right: 4%; top: 12%; }
-.widget.placed { transform: none; right: auto; }
+.widget.placed { transform: none !important; right: auto !important; }
 
 /* ---------- 問候 ---------- */
 #w-greeting .w-inner { --pd: 4px; padding: 6px 18px; }

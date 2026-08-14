@@ -452,6 +452,7 @@ function applyLayout() {
     const w = $(id);
     if (!w) continue;
     w.classList.add('placed');
+    w.style.transform = 'none';
     w.style.left = pos.x + '%';
     w.style.top = pos.y + '%';
     w.style.right = 'auto';
@@ -465,6 +466,7 @@ function initDrag() {
       const w = handle.closest('.widget');
       const rect = w.getBoundingClientRect();
       w.classList.add('placed');
+      w.style.transform = 'none';
       w.style.right = 'auto';
       w.style.left = rect.left + 'px';
       w.style.top = rect.top + 'px';
@@ -501,7 +503,7 @@ function resetLayout() {
   saveSettings();
   document.querySelectorAll('.widget').forEach(w => {
     w.classList.remove('placed');
-    w.style.left = w.style.top = w.style.right = '';
+    w.style.left = w.style.top = w.style.right = w.style.transform = '';
   });
 }
 
