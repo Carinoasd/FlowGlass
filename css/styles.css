@@ -215,6 +215,11 @@ body.dark-text .greeting-text { text-shadow: 0 1px 10px rgba(255,255,255,.4); }
 .clock-lunar .festival { color: var(--accent); margin-left: 8px; }
 .clock-lunar:empty { display: none; }
 
+/* ---------- 獨立翻頁小時鐘 ---------- */
+#w-clock2 { right: 4%; top: 52%; }
+#w-clock2 .w-inner { --pd: 5px; padding: 14px 16px; }
+.clock2 .clock-flip { margin-top: 0; }
+
 /* ---------- 搜尋 ---------- */
 #w-search .w-inner { --pd: 8px; width: min(620px, 86vw); }
 .search-box { border-radius: 999px; }

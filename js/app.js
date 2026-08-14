@@ -60,6 +60,7 @@ const DEFAULTS = {
     notes:    { on: false },
     pomo:     { on: true, work: 25, rest: 5 },
     weather:  { on: false, place: '', lat: null, lon: null },
+    clock2:   { on: false, size: 100 },
   },
   layout: {},
 };
@@ -522,6 +523,9 @@ function applyClockStyle() {
   inner.classList.toggle('glass', c.card !== false);
   inner.classList.toggle('no-card', c.card === false);
   $('clockDate').hidden = c.date === false;
+  // 獨立翻頁小時鐘
+  const inner2 = document.querySelector('#w-clock2 .w-inner');
+  inner2.style.zoom = (S.widgets.clock2.size ?? 100) / 100;
 }
 
 function buildAnalogTicks() {
@@ -576,6 +580,15 @@ function tickClock() {
     $('handM').setAttribute('transform', `rotate(${(m + s / 60) * 6} 100 100)`);
     $('handS').hidden = !c.seconds;
     if (c.seconds) $('handS').setAttribute('transform', `rotate(${s * 6} 100 100)`);
+  }
+  // 獨立翻頁小時鐘(沿用主時鐘的 24 小時制/秒數設定)
+  if (S.widgets.clock2.on) {
+    let h2 = now.getHours();
+    if (!c.h24) h2 = h2 % 12 || 12;
+    setFlip('fc2H', String(h2).padStart(2, '0'));
+    setFlip('fc2M', String(now.getMinutes()).padStart(2, '0'));
+    $('fc2S').hidden = $('fc2Ssep').hidden = !c.seconds;
+    if (c.seconds) setFlip('fc2S', String(now.getSeconds()).padStart(2, '0'));
   }
   $('clockDate').textContent = new Intl.DateTimeFormat(locale, {
     year: 'numeric', month: 'long', day: 'numeric', weekday: 'long',
@@ -1122,6 +1135,7 @@ async function importSettings(file) {
 const WIDGET_EL = {
   clock: 'w-clock', greeting: 'w-greeting', search: 'w-search',
   dock: 'w-dock', notes: 'w-notes', pomo: 'w-pomo', weather: 'w-weather',
+  clock2: 'w-clock2',
 };
 
 function applyWidgetVisibility() {
@@ -1164,6 +1178,8 @@ function reflectSettings() {
   $('tglCkMini').checked = !!p.minimal;
   $('tglCkFlip').checked = !!p.flip;
   $('tglCkAnalog').checked = !!p.analog;
+  $('tglClock2').checked = S.widgets.clock2.on;
+  $('clock2Size').value = S.widgets.clock2.size ?? 100;
   $('clockSizeSlider').value = S.widgets.clock.size ?? 100;
   $('tglClockCard').checked = S.widgets.clock.card !== false;
   $('tglDate').checked = S.widgets.clock.date !== false;
@@ -1270,6 +1286,11 @@ function initSettingsPanel() {
   ckPart('tglCkMini', 'minimal');
   ckPart('tglCkFlip', 'flip');
   ckPart('tglCkAnalog', 'analog');
+  wtoggle('tglClock2', 'clock2');
+  bind('clock2Size', 'input', e => {
+    S.widgets.clock2.size = +e.target.value;
+    applyClockStyle(); saveSettings();
+  });
   bind('clockSizeSlider', 'input', e => {
     S.widgets.clock.size = +e.target.value;
     applyClockStyle(); saveSettings();

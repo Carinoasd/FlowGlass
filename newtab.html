@@ -66,6 +66,19 @@
     </div>
   </section>
 
+  <section class="widget" id="w-clock2" data-w="clock2" style="--delay:.14s">
+    <div class="w-inner glass clock2">
+      <button class="drag-handle" title="拖拉移動">⠿</button>
+      <div class="clock-flip">
+        <div class="flip-card" id="fc2H"><span>--</span></div>
+        <div class="flip-sep">:</div>
+        <div class="flip-card" id="fc2M"><span>--</span></div>
+        <div class="flip-sep" id="fc2Ssep">:</div>
+        <div class="flip-card" id="fc2S"><span>--</span></div>
+      </div>
+    </div>
+  </section>
+
   <section class="widget" id="w-search" data-w="search" style="--delay:.18s">
     <div class="w-inner glass search-box">
       <button class="drag-handle" title="拖拉移動">⠿</button>
@@ -211,6 +224,8 @@
       <div class="sp-row slider-row sub"><span data-i18n="w.clockSize">時鐘大小</span><input id="clockSizeSlider" type="range" min="50" max="130" value="100"></div>
       <div class="sp-row toggle-row sub"><span data-i18n="w.clockCard">玻璃卡片</span><input id="tglClockCard" type="checkbox" class="toggle" checked></div>
       <div class="sp-row toggle-row sub"><span data-i18n="w.dateLine">日期</span><input id="tglDate" type="checkbox" class="toggle" checked></div>
+      <div class="sp-row toggle-row"><span data-i18n="w.clock2">翻頁小時鐘(獨立)</span><input id="tglClock2" type="checkbox" class="toggle"></div>
+      <div class="sp-row slider-row sub"><span data-i18n="w.clockSize">時鐘大小</span><input id="clock2Size" type="range" min="50" max="140" value="100"></div>
       <div class="sp-row toggle-row"><span data-i18n="w.greeting">問候語</span><input id="tglGreeting" type="checkbox" class="toggle" checked></div>
       <div class="sp-row sub"><span data-i18n="w.name">你的名字</span><input id="nameInput" type="text" maxlength="20"></div>
       <div class="sp-row toggle-row"><span data-i18n="w.search">搜尋列</span><input id="tglSearch" type="checkbox" class="toggle" checked></div>
