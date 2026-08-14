@@ -52,12 +52,13 @@ const DEFAULTS = {
     slideshow: { on: false, mode: 'newtab', minutes: 10 },
   },
   widgets: {
-    clock:    { on: true, seconds: false, h24: true, lunar: true },
+    clock:    { on: true, seconds: false, h24: true, lunar: true, style: 'digital' },
     greeting: { on: true, name: '大和' },
     search:   { on: true, engine: 'google', history: true },
     dock:     { on: true },
     notes:    { on: false },
     pomo:     { on: true, work: 25, rest: 5 },
+    weather:  { on: false, place: '', lat: null, lon: null },
   },
   layout: {},
 };
@@ -497,13 +498,62 @@ function resetLayout() {
    ============================================================ */
 let lastLunarDay = null;
 
+function applyClockStyle() {
+  const st = S.widgets.clock.style || 'digital';
+  $('clockTime').hidden = st !== 'digital';
+  $('clockFlip').hidden = st !== 'flip';
+  $('clockAnalog').hidden = st !== 'analog';
+}
+
+function buildAnalogTicks() {
+  const g = $('analogTicks');
+  const NS = 'http://www.w3.org/2000/svg';
+  for (let i = 0; i < 12; i++) {
+    const line = document.createElementNS(NS, 'line');
+    const major = i % 3 === 0;
+    line.setAttribute('x1', '100'); line.setAttribute('y1', '12');
+    line.setAttribute('x2', '100'); line.setAttribute('y2', major ? '22' : '18');
+    line.setAttribute('class', 'tickmark');
+    line.setAttribute('transform', `rotate(${i * 30} 100 100)`);
+    g.appendChild(line);
+  }
+}
+
+function setFlip(id, val) {
+  const el = $(id);
+  const span = el.firstElementChild;
+  if (span.textContent !== val) {
+    span.textContent = val;
+    el.classList.remove('pop');
+    void el.offsetWidth;
+    el.classList.add('pop');
+  }
+}
+
 function tickClock() {
   const now = new Date();
   const c = S.widgets.clock;
   const locale = getLang() === 'zh_TW' ? 'zh-Hant-TW' : 'en-US';
-  const opts = { hour: '2-digit', minute: '2-digit', hour12: !c.h24 };
-  if (c.seconds) opts.second = '2-digit';
-  $('clockTime').textContent = new Intl.DateTimeFormat(locale, opts).format(now);
+  const style = c.style || 'digital';
+
+  if (style === 'digital') {
+    const opts = { hour: '2-digit', minute: '2-digit', hour12: !c.h24 };
+    if (c.seconds) opts.second = '2-digit';
+    $('clockTime').textContent = new Intl.DateTimeFormat(locale, opts).format(now);
+  } else if (style === 'flip') {
+    let h = now.getHours();
+    if (!c.h24) h = h % 12 || 12;
+    setFlip('fcH', String(h).padStart(2, '0'));
+    setFlip('fcM', String(now.getMinutes()).padStart(2, '0'));
+    $('fcS').hidden = $('fcSsep').hidden = !c.seconds;
+    if (c.seconds) setFlip('fcS', String(now.getSeconds()).padStart(2, '0'));
+  } else {
+    const h = now.getHours() % 12, m = now.getMinutes(), s = now.getSeconds();
+    $('handH').setAttribute('transform', `rotate(${(h + m / 60) * 30} 100 100)`);
+    $('handM').setAttribute('transform', `rotate(${(m + s / 60) * 6} 100 100)`);
+    $('handS').hidden = !c.seconds;
+    if (c.seconds) $('handS').setAttribute('transform', `rotate(${s * 6} 100 100)`);
+  }
   $('clockDate').textContent = new Intl.DateTimeFormat(locale, {
     year: 'numeric', month: 'long', day: 'numeric', weekday: 'long',
   }).format(now);
@@ -897,11 +947,118 @@ function initPomo() {
 }
 
 /* ============================================================
+   天氣(Open-Meteo,免金鑰;僅在開啟時連線)
+   ============================================================ */
+let lastWx = null;
+
+function wmoInfo(code) {
+  if (code === 0) return ['☀️', 'wx.clear'];
+  if (code <= 2) return ['🌤️', 'wx.pcloud'];
+  if (code === 3) return ['☁️', 'wx.overcast'];
+  if (code === 45 || code === 48) return ['🌫️', 'wx.fog'];
+  if (code >= 51 && code <= 57) return ['🌦️', 'wx.drizzle'];
+  if (code >= 61 && code <= 67) return ['🌧️', 'wx.rain'];
+  if (code >= 71 && code <= 77) return ['🌨️', 'wx.snow'];
+  if (code >= 80 && code <= 82) return ['🌦️', 'wx.shower'];
+  if (code >= 85 && code <= 86) return ['🌨️', 'wx.snow'];
+  if (code >= 95) return ['⛈️', 'wx.thunder'];
+  return ['🌡️', 'wx.pcloud'];
+}
+
+function geolocate() {
+  return new Promise((res, rej) => {
+    if (!navigator.geolocation) return rej(new Error('no geolocation'));
+    navigator.geolocation.getCurrentPosition(
+      p => res({ lat: p.coords.latitude, lon: p.coords.longitude }),
+      rej, { timeout: 8000, maximumAge: 600000 });
+  });
+}
+
+function renderWeather(d) {
+  $('weatherBody').classList.remove('hidden');
+  $('weatherErr').classList.add('hidden');
+  const [ico, key] = wmoInfo(d.code);
+  $('weatherIcon').textContent = ico;
+  $('weatherTemp').textContent = d.temp + '°';
+  $('weatherDesc').textContent = t(key) + (d.place ? ' · ' + d.place : '');
+  $('weatherMeta').textContent = `↑${d.hi}°  ↓${d.lo}°  ·  ${t('wx.humid')} ${d.hum}%`;
+}
+
+async function loadWeather(force = false) {
+  const w = S.widgets.weather;
+  if (!w.on) return;
+  const cache = loadJSON('fg.weatherCache', null);
+  if (!force && cache && Date.now() - cache.t < 30 * 60000) {
+    lastWx = cache.data;
+    renderWeather(cache.data);
+    return;
+  }
+  try {
+    let { lat, lon, place } = w;
+    if (lat == null || lon == null) {
+      const g = await geolocate();
+      lat = g.lat; lon = g.lon; place = '';
+    }
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+      `&current=temperature_2m,relative_humidity_2m,weather_code` +
+      `&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=1`;
+    const r = await fetch(url);
+    const d = await r.json();
+    const data = {
+      temp: Math.round(d.current.temperature_2m),
+      hum: d.current.relative_humidity_2m,
+      code: d.current.weather_code,
+      hi: Math.round(d.daily.temperature_2m_max[0]),
+      lo: Math.round(d.daily.temperature_2m_min[0]),
+      place,
+    };
+    saveJSON('fg.weatherCache', { t: Date.now(), data });
+    lastWx = data;
+    renderWeather(data);
+  } catch {
+    $('weatherBody').classList.add('hidden');
+    const er = $('weatherErr');
+    er.classList.remove('hidden');
+    er.textContent = t('wx.err');
+  }
+}
+
+/* ============================================================
+   設定匯出 / 匯入
+   ============================================================ */
+function exportSettings() {
+  const data = {
+    app: 'flowglass', v: 1,
+    settings: S, dock, history,
+    notes: localStorage.getItem(LS_NOTES) || '',
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'flowglass-backup.json';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+async function importSettings(file) {
+  if (!file) return;
+  try {
+    const d = JSON.parse(await file.text());
+    if (d.app !== 'flowglass') throw new Error('not a flowglass backup');
+    if (d.settings) saveJSON(LS_SETTINGS, deepMerge(DEFAULTS, d.settings));
+    if (Array.isArray(d.dock)) saveJSON(LS_DOCK, d.dock);
+    if (Array.isArray(d.history)) saveJSON(LS_HISTORY, d.history);
+    if (typeof d.notes === 'string') localStorage.setItem(LS_NOTES, d.notes);
+    location.reload();
+  } catch { /* 格式不對就不動現有設定 */ }
+}
+
+/* ============================================================
    元件顯示開關
    ============================================================ */
 const WIDGET_EL = {
   clock: 'w-clock', greeting: 'w-greeting', search: 'w-search',
-  dock: 'w-dock', notes: 'w-notes', pomo: 'w-pomo',
+  dock: 'w-dock', notes: 'w-notes', pomo: 'w-pomo', weather: 'w-weather',
 };
 
 function applyWidgetVisibility() {
@@ -937,6 +1094,9 @@ function reflectSettings() {
   $('tglDock').checked = S.widgets.dock.on;
   $('tglNotes').checked = S.widgets.notes.on;
   $('tglPomo').checked = S.widgets.pomo.on;
+  $('tglWeather').checked = S.widgets.weather.on;
+  $('weatherCity').value = S.widgets.weather.place;
+  $('clockStyleSel').value = S.widgets.clock.style || 'digital';
   $('langSelect').value = getLang();
 }
 
@@ -1004,6 +1164,44 @@ function initSettingsPanel() {
   wtoggle('tglDock', 'dock');
   wtoggle('tglNotes', 'notes');
   wtoggle('tglPomo', 'pomo');
+  wtoggle('tglWeather', 'weather');
+  bind('tglWeather', 'change', e => { if (e.target.checked) loadWeather(); });
+
+  bind('weatherCity', 'change', async e => {
+    const name = e.target.value.trim();
+    const w = S.widgets.weather;
+    if (!name) {
+      w.lat = w.lon = null; w.place = '';
+      saveSettings(); loadWeather(true);
+      return;
+    }
+    try {
+      const lang = getLang() === 'zh_TW' ? 'zh' : 'en';
+      const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=1&language=${lang}`);
+      const d = await r.json();
+      if (d.results && d.results[0]) {
+        const g = d.results[0];
+        w.lat = g.latitude; w.lon = g.longitude; w.place = g.name;
+        saveSettings(); loadWeather(true);
+      } else {
+        $('weatherBody').classList.add('hidden');
+        const er = $('weatherErr');
+        er.classList.remove('hidden');
+        er.textContent = t('wx.err');
+      }
+    } catch { /* 離線時忽略 */ }
+  });
+
+  bind('clockStyleSel', 'change', e => {
+    S.widgets.clock.style = e.target.value;
+    applyClockStyle(); tickClock(); saveSettings();
+  });
+
+  bind('exportBtn', 'click', exportSettings);
+  bind('importFile', 'change', e => {
+    importSettings(e.target.files[0]);
+    e.target.value = '';
+  });
 
   bind('nameInput', 'input', e => {
     S.widgets.greeting.name = e.target.value;
@@ -1020,6 +1218,7 @@ function initSettingsPanel() {
     setLang(S.lang);
     applyI18n();
     tickClock(); updateGreeting(); renderDock(); pomoRender();
+    if (lastWx) renderWeather(lastWx);
     saveSettings();
   });
 }
@@ -1043,8 +1242,11 @@ async function main() {
 
   // 元件
   applyWidgetVisibility();
+  buildAnalogTicks();
+  applyClockStyle();
   tickClock();
   setInterval(tickClock, 1000);
+  loadWeather();
   updateGreeting();
   setInterval(updateGreeting, 60000);
   initSearch();

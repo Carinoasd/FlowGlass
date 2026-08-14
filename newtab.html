@@ -45,6 +45,21 @@
     <div class="w-inner glass">
       <button class="drag-handle" title="拖拉移動">⠿</button>
       <div id="clockTime" class="clock-time">--:--</div>
+      <div id="clockFlip" class="clock-flip" hidden>
+        <div class="flip-card" id="fcH"><span>--</span></div>
+        <div class="flip-sep">:</div>
+        <div class="flip-card" id="fcM"><span>--</span></div>
+        <div class="flip-sep" id="fcSsep">:</div>
+        <div class="flip-card" id="fcS"><span>--</span></div>
+      </div>
+      <svg id="clockAnalog" class="clock-analog" viewBox="0 0 200 200" hidden>
+        <circle class="face" cx="100" cy="100" r="92"/>
+        <g id="analogTicks"></g>
+        <line id="handH" class="hand h" x1="100" y1="100" x2="100" y2="55"/>
+        <line id="handM" class="hand m" x1="100" y1="100" x2="100" y2="38"/>
+        <line id="handS" class="hand s" x1="100" y1="108" x2="100" y2="32"/>
+        <circle class="pin" cx="100" cy="100" r="5"/>
+      </svg>
       <div id="clockDate" class="clock-date"></div>
       <div id="clockLunar" class="clock-lunar"></div>
     </div>
@@ -77,6 +92,22 @@
       <button class="drag-handle" title="拖拉移動">⠿</button>
       <div class="w-title" data-i18n="w.notes">快速筆記</div>
       <textarea id="notesArea" data-i18n-ph="notes.ph" placeholder="隨手記點什麼…"></textarea>
+    </div>
+  </section>
+
+  <section class="widget" id="w-weather" data-w="weather" style="--delay:.5s">
+    <div class="w-inner glass weather">
+      <button class="drag-handle" title="拖拉移動">⠿</button>
+      <div class="w-title" data-i18n="w.weather">天氣</div>
+      <div id="weatherBody" class="weather-body">
+        <div id="weatherIcon" class="weather-ico">☀️</div>
+        <div class="weather-main">
+          <span id="weatherTemp">--°</span>
+          <span id="weatherDesc"></span>
+        </div>
+      </div>
+      <div id="weatherMeta" class="weather-meta"></div>
+      <div id="weatherErr" class="weather-err hidden"></div>
     </div>
   </section>
 
@@ -171,6 +202,13 @@
       <div class="sp-row toggle-row sub"><span data-i18n="w.seconds">顯示秒數</span><input id="tglSeconds" type="checkbox" class="toggle"></div>
       <div class="sp-row toggle-row sub"><span data-i18n="w.h24">24 小時制</span><input id="tglH24" type="checkbox" class="toggle" checked></div>
       <div class="sp-row toggle-row sub"><span data-i18n="w.lunar">農曆</span><input id="tglLunar" type="checkbox" class="toggle" checked></div>
+      <div class="sp-row sub"><span data-i18n="w.clockStyle">時鐘樣式</span>
+        <select id="clockStyleSel">
+          <option value="digital" data-i18n="clock.digital">數位</option>
+          <option value="flip" data-i18n="clock.flip">翻頁</option>
+          <option value="analog" data-i18n="clock.analog">指針</option>
+        </select>
+      </div>
       <div class="sp-row toggle-row"><span data-i18n="w.greeting">問候語</span><input id="tglGreeting" type="checkbox" class="toggle" checked></div>
       <div class="sp-row sub"><span data-i18n="w.name">你的名字</span><input id="nameInput" type="text" maxlength="20"></div>
       <div class="sp-row toggle-row"><span data-i18n="w.search">搜尋列</span><input id="tglSearch" type="checkbox" class="toggle" checked></div>
@@ -179,6 +217,19 @@
       <div class="sp-row toggle-row"><span data-i18n="w.dock">捷徑 Dock</span><input id="tglDock" type="checkbox" class="toggle" checked></div>
       <div class="sp-row toggle-row"><span data-i18n="w.notes">快速筆記</span><input id="tglNotes" type="checkbox" class="toggle"></div>
       <div class="sp-row toggle-row"><span data-i18n="w.pomo">番茄鐘</span><input id="tglPomo" type="checkbox" class="toggle"></div>
+      <div class="sp-row toggle-row"><span data-i18n="w.weather">天氣</span><input id="tglWeather" type="checkbox" class="toggle"></div>
+      <div class="sp-row sub"><input id="weatherCity" type="text" data-i18n-ph="wx.cityPh" placeholder="城市(留空=自動定位)" style="width:100%"></div>
+    </details>
+
+    <details>
+      <summary data-i18n="sec.backup">備份</summary>
+      <div class="sp-row">
+        <button id="exportBtn" class="mini-btn" data-i18n="backup.export">匯出設定</button>
+        <label class="mini-btn" style="cursor:pointer">
+          <input id="importFile" type="file" accept="application/json" hidden>
+          <span data-i18n="backup.import">匯入設定</span>
+        </label>
+      </div>
     </details>
 
     <details>

@@ -164,6 +164,38 @@ body.dark-text .greeting-text { text-shadow: 0 1px 10px rgba(255,255,255,.4); }
   line-height: 1.04; font-variant-numeric: tabular-nums;
 }
 .clock-date { margin-top: 6px; font-size: 17px; color: var(--tx-dim); letter-spacing: .1em; }
+
+/* 翻頁鐘 */
+.clock-flip { display: flex; gap: 8px; align-items: center; justify-content: center; perspective: 400px; }
+.flip-card {
+  position: relative;
+  background: rgba(10, 14, 22, .48);
+  border-radius: 14px; padding: 8px 14px;
+  font-size: 60px; font-weight: 300; color: #fff;
+  font-variant-numeric: tabular-nums;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, .18), 0 6px 18px rgba(0, 0, 0, .3);
+}
+.flip-card::after {
+  content: ""; position: absolute; left: 6%; right: 6%; top: 50%;
+  height: 1.5px; background: rgba(0, 0, 0, .5);
+}
+.flip-card span { display: inline-block; }
+.flip-card.pop span { animation: flipPop .38s cubic-bezier(.2, .8, .3, 1.2); }
+@keyframes flipPop {
+  0% { transform: rotateX(85deg); opacity: .2; }
+  100% { transform: rotateX(0); opacity: 1; }
+}
+.flip-sep { font-size: 44px; opacity: .55; }
+
+/* 指針鐘 */
+.clock-analog { width: 190px; height: 190px; margin: 0 auto; display: block; }
+.clock-analog .face { fill: rgba(255, 255, 255, .08); stroke: rgba(255, 255, 255, .35); stroke-width: 1.5; }
+.clock-analog .tickmark { stroke: var(--tx-dim); stroke-width: 2; stroke-linecap: round; }
+.clock-analog .hand { stroke: var(--tx); stroke-linecap: round; }
+.clock-analog .hand.h { stroke-width: 6; }
+.clock-analog .hand.m { stroke-width: 3.5; }
+.clock-analog .hand.s { stroke: var(--accent); stroke-width: 2; }
+.clock-analog .pin { fill: var(--accent); }
 .clock-lunar { margin-top: 3px; font-size: 14px; color: var(--tx-dim); letter-spacing: .14em; }
 .clock-lunar .festival { color: var(--accent); margin-left: 8px; }
 .clock-lunar:empty { display: none; }
@@ -294,6 +326,17 @@ body.dark-text .greeting-text { text-shadow: 0 1px 10px rgba(255,255,255,.4); }
   background: rgba(255, 255, 255, .14); color: var(--tx);
   text-align: center; font-family: inherit;
 }
+
+/* ---------- 天氣 ---------- */
+#w-weather { left: 4%; top: 46%; }
+#w-weather .w-inner { --pd: 4px; width: 225px; padding: 16px 18px; }
+.weather-body { display: flex; align-items: center; gap: 14px; }
+.weather-ico { font-size: 44px; line-height: 1; }
+.weather-main { display: flex; flex-direction: column; }
+#weatherTemp { font-size: 34px; font-weight: 200; line-height: 1.1; }
+#weatherDesc { font-size: 13px; color: var(--tx-dim); }
+.weather-meta { margin-top: 8px; font-size: 12px; color: var(--tx-dim); letter-spacing: .05em; }
+.weather-err { font-size: 12px; color: var(--tx-dim); }
 
 /* ---------- 通用按鈕 ---------- */
 .mini-btn {
@@ -472,6 +515,6 @@ body.dark-text .greeting-text { text-shadow: 0 1px 10px rgba(255,255,255,.4); }
 /* ---------- 小螢幕 ---------- */
 @media (max-width: 760px) {
   .clock-time { font-size: 58px; }
-  #w-notes, #w-pomo { display: none; }
+  #w-notes, #w-pomo, #w-weather { display: none; }
   .dock-grid { max-width: 92vw; }
 }
