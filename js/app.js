@@ -21,10 +21,14 @@ const ENGINES = {
 };
 
 const DEFAULT_DOCK = [
-  { id: 'd1', title: 'YouTube',  url: 'https://www.youtube.com' },
-  { id: 'd2', title: 'GitHub',   url: 'https://github.com' },
-  { id: 'd3', title: 'Gmail',    url: 'https://mail.google.com' },
-  { id: 'd4', title: '維基百科', url: 'https://zh.wikipedia.org' },
+  { id: 'd1', title: 'YouTube',    url: 'https://www.youtube.com' },
+  { id: 'd3', title: 'Gmail',      url: 'https://mail.google.com' },
+  { id: 'd5', title: '雲端硬碟',   url: 'https://drive.google.com' },
+  { id: 'd6', title: 'Google 地圖', url: 'https://maps.google.com' },
+  { id: 'd7', title: 'Google 翻譯', url: 'https://translate.google.com' },
+  { id: 'd8', title: 'Google 日曆', url: 'https://calendar.google.com' },
+  { id: 'd2', title: 'GitHub',     url: 'https://github.com' },
+  { id: 'd4', title: '維基百科',   url: 'https://zh.wikipedia.org' },
 ];
 
 const DEFAULTS = {
@@ -84,6 +88,15 @@ function hexToRgb(hex) {
 /* ---------- 狀態 ---------- */
 const S = deepMerge(DEFAULTS, loadJSON(LS_SETTINGS, {}));
 let dock = loadJSON(LS_DOCK, null) ?? structuredClone(DEFAULT_DOCK);
+// 舊安裝一次性補進 Google 常用服務(已存在或自訂過的項目不動)
+if (!localStorage.getItem('fg.dockDefaultsV2')) {
+  const have = new Set(dock.map(x => x.url.replace(/\/+$/, '')));
+  for (const d of DEFAULT_DOCK) {
+    if (!have.has(d.url.replace(/\/+$/, ''))) dock.push({ ...d, id: 'v2' + d.id });
+  }
+  localStorage.setItem('fg.dockDefaultsV2', '1');
+  saveJSON(LS_DOCK, dock);
+}
 let history = loadJSON(LS_HISTORY, []);
 let library = [];           // IndexedDB 桌布清單
 let currentObjectUrl = null;
