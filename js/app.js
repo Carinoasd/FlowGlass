@@ -21,14 +21,26 @@ const ENGINES = {
 };
 
 const DEFAULT_DOCK = [
-  { id: 'd1', title: 'YouTube',    url: 'https://www.youtube.com' },
-  { id: 'd3', title: 'Gmail',      url: 'https://mail.google.com' },
-  { id: 'd5', title: '雲端硬碟',   url: 'https://drive.google.com' },
-  { id: 'd6', title: 'Google 地圖', url: 'https://maps.google.com' },
-  { id: 'd7', title: 'Google 翻譯', url: 'https://translate.google.com' },
-  { id: 'd8', title: 'Google 日曆', url: 'https://calendar.google.com' },
-  { id: 'd2', title: 'GitHub',     url: 'https://github.com' },
-  { id: 'd4', title: '維基百科',   url: 'https://zh.wikipedia.org' },
+  { id: 'd1', title: 'YouTube',  url: 'https://www.youtube.com' },
+  { id: 'd2', title: 'GitHub',   url: 'https://github.com' },
+  { id: 'd3', title: 'Gmail',    url: 'https://mail.google.com' },
+  { id: 'd4', title: '維基百科', url: 'https://zh.wikipedia.org' },
+];
+
+// 「新增捷徑」視窗裡的常用服務清單(點一下加入,自己選)
+const PRESET_SITES = [
+  { title: '雲端硬碟',    url: 'https://drive.google.com' },
+  { title: 'Google 地圖', url: 'https://maps.google.com' },
+  { title: 'Google 翻譯', url: 'https://translate.google.com' },
+  { title: 'Google 日曆', url: 'https://calendar.google.com' },
+  { title: 'Google 相簿', url: 'https://photos.google.com' },
+  { title: 'Google 文件', url: 'https://docs.google.com' },
+  { title: 'Google Keep', url: 'https://keep.google.com' },
+  { title: 'Google Meet', url: 'https://meet.google.com' },
+  { title: 'Gmail',       url: 'https://mail.google.com' },
+  { title: 'YouTube',     url: 'https://www.youtube.com' },
+  { title: 'GitHub',      url: 'https://github.com' },
+  { title: '維基百科',    url: 'https://zh.wikipedia.org' },
 ];
 
 const DEFAULTS = {
@@ -88,13 +100,10 @@ function hexToRgb(hex) {
 /* ---------- 狀態 ---------- */
 const S = deepMerge(DEFAULTS, loadJSON(LS_SETTINGS, {}));
 let dock = loadJSON(LS_DOCK, null) ?? structuredClone(DEFAULT_DOCK);
-// 舊安裝一次性補進 Google 常用服務(已存在或自訂過的項目不動)
-if (!localStorage.getItem('fg.dockDefaultsV2')) {
-  const have = new Set(dock.map(x => x.url.replace(/\/+$/, '')));
-  for (const d of DEFAULT_DOCK) {
-    if (!have.has(d.url.replace(/\/+$/, ''))) dock.push({ ...d, id: 'v2' + d.id });
-  }
-  localStorage.setItem('fg.dockDefaultsV2', '1');
+// v1.1 曾自動補入 Google 服務,現改為自選制:把當時自動加的項目收回
+if (localStorage.getItem('fg.dockDefaultsV2')) {
+  dock = dock.filter(x => !String(x.id).startsWith('v2d'));
+  localStorage.removeItem('fg.dockDefaultsV2');
   saveJSON(LS_DOCK, dock);
 }
 let history = loadJSON(LS_HISTORY, []);
@@ -722,11 +731,41 @@ function renderDock() {
   grid.appendChild(add);
 }
 
+const normUrl = u => u.replace(/\/+$/, '').toLowerCase();
+
+function renderSuggestChips() {
+  const wrap = $('suggestGrid');
+  wrap.textContent = '';
+  const have = new Set(dock.map(x => normUrl(x.url)));
+  for (const p of PRESET_SITES) {
+    if (have.has(normUrl(p.url))) continue;
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'sug-chip';
+    const im = document.createElement('img');
+    im.src = faviconUrl(p.url);
+    im.alt = '';
+    im.addEventListener('error', () => im.remove());
+    b.appendChild(im);
+    b.appendChild(document.createTextNode(p.title));
+    b.addEventListener('click', () => {
+      dock.push({ id: Date.now().toString(36), title: p.title, url: p.url });
+      saveJSON(LS_DOCK, dock);
+      renderDock();
+      renderSuggestChips();
+    });
+    wrap.appendChild(b);
+  }
+  // 編輯模式或全數已加入時隱藏
+  $('suggestWrap').classList.toggle('hidden', modalEditId !== null || wrap.children.length === 0);
+}
+
 function openModal(item) {
   modalEditId = item ? item.id : null;
   $('modalTitle').textContent = t(item ? 'dock.edit' : 'dock.add');
   $('modalName').value = item ? item.title : '';
   $('modalUrl').value = item ? item.url : '';
+  renderSuggestChips();
   $('modalBackdrop').classList.remove('hidden');
   $('modalName').focus();
 }

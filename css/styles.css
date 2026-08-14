@@ -457,6 +457,18 @@ body.dark-text .greeting-text { text-shadow: 0 1px 10px rgba(255,255,255,.4); }
 .modal input:focus { box-shadow: 0 0 0 2px var(--accent-soft); }
 .modal-btns { display: flex; justify-content: flex-end; gap: 10px; margin-top: 6px; }
 
+/* 常用服務快速加入 */
+.sug-grid { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 14px; }
+.sug-chip {
+  border: 0; border-radius: 999px;
+  padding: 6px 12px; font-size: 12px; font-family: inherit;
+  background: rgba(255, 255, 255, .13); color: var(--tx);
+  cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+  transition: background .15s, transform .1s;
+}
+.sug-chip:hover { background: var(--accent-soft); transform: translateY(-1px); }
+.sug-chip img { width: 14px; height: 14px; border-radius: 3px; }
+
 /* ---------- 小螢幕 ---------- */
 @media (max-width: 760px) {
   .clock-time { font-size: 58px; }
