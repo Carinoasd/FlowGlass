@@ -163,11 +163,15 @@ body.dark-text .greeting-text { text-shadow: 0 1px 10px rgba(255,255,255,.4); }
   font-size: 86px; font-weight: 200; letter-spacing: .04em;
   line-height: 1.04; font-variant-numeric: tabular-nums;
 }
-/* 極簡樣式:小巧純文字 */
-.clock-time.minimal {
-  font-size: 38px; font-weight: 300;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, .45);
+/* 極簡小時鐘(可與其他時鐘堆疊) */
+.clock-mini {
+  font-size: 34px; font-weight: 300; letter-spacing: .05em;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, .4);
 }
+.clock-flip:not([hidden]) { margin-top: 12px; }
+.clock-analog:not([hidden]) { margin-top: 12px; }
+.sp-label.sub-label { padding-left: 16px; margin-top: 8px; }
 /* 關閉玻璃卡片時縮小留白 */
 #w-clock .w-inner.no-card { padding: 8px 16px; }
 .clock-date { margin-top: 6px; font-size: 17px; color: var(--tx-dim); letter-spacing: .1em; }

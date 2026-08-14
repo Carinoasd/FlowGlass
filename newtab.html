@@ -45,6 +45,7 @@
     <div class="w-inner glass">
       <button class="drag-handle" title="拖拉移動">⠿</button>
       <div id="clockTime" class="clock-time">--:--</div>
+      <div id="clockMini" class="clock-mini" hidden>--:--</div>
       <div id="clockFlip" class="clock-flip" hidden>
         <div class="flip-card" id="fcH"><span>--</span></div>
         <div class="flip-sep">:</div>
@@ -202,14 +203,11 @@
       <div class="sp-row toggle-row sub"><span data-i18n="w.seconds">顯示秒數</span><input id="tglSeconds" type="checkbox" class="toggle"></div>
       <div class="sp-row toggle-row sub"><span data-i18n="w.h24">24 小時制</span><input id="tglH24" type="checkbox" class="toggle" checked></div>
       <div class="sp-row toggle-row sub"><span data-i18n="w.lunar">農曆</span><input id="tglLunar" type="checkbox" class="toggle" checked></div>
-      <div class="sp-row sub"><span data-i18n="w.clockStyle">時鐘樣式</span>
-        <select id="clockStyleSel">
-          <option value="digital" data-i18n="clock.digital">數位</option>
-          <option value="minimal" data-i18n="clock.minimal">極簡</option>
-          <option value="flip" data-i18n="clock.flip">翻頁</option>
-          <option value="analog" data-i18n="clock.analog">指針</option>
-        </select>
-      </div>
+      <div class="sp-label sub-label" data-i18n="w.clockParts">時鐘組合(可複選堆疊)</div>
+      <div class="sp-row toggle-row sub"><span data-i18n="clock.digital">數位</span><input id="tglCkDigital" type="checkbox" class="toggle" checked></div>
+      <div class="sp-row toggle-row sub"><span data-i18n="clock.minimal">極簡</span><input id="tglCkMini" type="checkbox" class="toggle"></div>
+      <div class="sp-row toggle-row sub"><span data-i18n="clock.flip">翻頁</span><input id="tglCkFlip" type="checkbox" class="toggle"></div>
+      <div class="sp-row toggle-row sub"><span data-i18n="clock.analog">指針</span><input id="tglCkAnalog" type="checkbox" class="toggle"></div>
       <div class="sp-row slider-row sub"><span data-i18n="w.clockSize">時鐘大小</span><input id="clockSizeSlider" type="range" min="50" max="130" value="100"></div>
       <div class="sp-row toggle-row sub"><span data-i18n="w.clockCard">玻璃卡片</span><input id="tglClockCard" type="checkbox" class="toggle" checked></div>
       <div class="sp-row toggle-row sub"><span data-i18n="w.dateLine">日期</span><input id="tglDate" type="checkbox" class="toggle" checked></div>

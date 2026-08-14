@@ -52,7 +52,8 @@ const DEFAULTS = {
     slideshow: { on: false, mode: 'newtab', minutes: 10 },
   },
   widgets: {
-    clock:    { on: true, seconds: false, h24: true, lunar: true, style: 'digital', size: 100, card: true, date: true },
+    clock:    { on: true, seconds: false, h24: true, lunar: true, size: 100, card: true, date: true,
+                parts: { digital: true, minimal: false, flip: false, analog: false } },
     greeting: { on: true, name: '大和' },
     search:   { on: true, engine: 'google', history: true },
     dock:     { on: true },
@@ -100,6 +101,16 @@ function hexToRgb(hex) {
 
 /* ---------- 狀態 ---------- */
 const S = deepMerge(DEFAULTS, loadJSON(LS_SETTINGS, {}));
+// 舊版單選 style → 新版可堆疊 parts
+{
+  const c = S.widgets.clock;
+  if ('style' in c) {
+    const p = { digital: false, minimal: false, flip: false, analog: false };
+    if (c.style in p) p[c.style] = true; else p.digital = true;
+    c.parts = p;
+    delete c.style;
+  }
+}
 let dock = loadJSON(LS_DOCK, null) ?? structuredClone(DEFAULT_DOCK);
 // v1.1 曾自動補入 Google 服務,現改為自選制:把當時自動加的項目收回
 if (localStorage.getItem('fg.dockDefaultsV2')) {
@@ -500,11 +511,11 @@ let lastLunarDay = null;
 
 function applyClockStyle() {
   const c = S.widgets.clock;
-  const st = c.style || 'digital';
-  $('clockTime').hidden = st !== 'digital' && st !== 'minimal';
-  $('clockTime').classList.toggle('minimal', st === 'minimal');
-  $('clockFlip').hidden = st !== 'flip';
-  $('clockAnalog').hidden = st !== 'analog';
+  const p = c.parts || { digital: true };
+  $('clockTime').hidden = !p.digital;
+  $('clockMini').hidden = !p.minimal;
+  $('clockFlip').hidden = !p.flip;
+  $('clockAnalog').hidden = !p.analog;
   // 配件:大小 / 玻璃卡片 / 日期行
   const inner = document.querySelector('#w-clock .w-inner');
   inner.style.zoom = (c.size ?? 100) / 100;
@@ -542,20 +553,24 @@ function tickClock() {
   const now = new Date();
   const c = S.widgets.clock;
   const locale = getLang() === 'zh_TW' ? 'zh-Hant-TW' : 'en-US';
-  const style = c.style || 'digital';
+  const p = c.parts || { digital: true };
 
-  if (style === 'digital' || style === 'minimal') {
+  if (p.digital || p.minimal) {
     const opts = { hour: '2-digit', minute: '2-digit', hour12: !c.h24 };
     if (c.seconds) opts.second = '2-digit';
-    $('clockTime').textContent = new Intl.DateTimeFormat(locale, opts).format(now);
-  } else if (style === 'flip') {
+    const txt = new Intl.DateTimeFormat(locale, opts).format(now);
+    if (p.digital) $('clockTime').textContent = txt;
+    if (p.minimal) $('clockMini').textContent = txt;
+  }
+  if (p.flip) {
     let h = now.getHours();
     if (!c.h24) h = h % 12 || 12;
     setFlip('fcH', String(h).padStart(2, '0'));
     setFlip('fcM', String(now.getMinutes()).padStart(2, '0'));
     $('fcS').hidden = $('fcSsep').hidden = !c.seconds;
     if (c.seconds) setFlip('fcS', String(now.getSeconds()).padStart(2, '0'));
-  } else {
+  }
+  if (p.analog) {
     const h = now.getHours() % 12, m = now.getMinutes(), s = now.getSeconds();
     $('handH').setAttribute('transform', `rotate(${(h + m / 60) * 30} 100 100)`);
     $('handM').setAttribute('transform', `rotate(${(m + s / 60) * 6} 100 100)`);
@@ -1144,7 +1159,11 @@ function reflectSettings() {
   $('tglPomo').checked = S.widgets.pomo.on;
   $('tglWeather').checked = S.widgets.weather.on;
   $('weatherCity').value = S.widgets.weather.place;
-  $('clockStyleSel').value = S.widgets.clock.style || 'digital';
+  const p = S.widgets.clock.parts || {};
+  $('tglCkDigital').checked = !!p.digital;
+  $('tglCkMini').checked = !!p.minimal;
+  $('tglCkFlip').checked = !!p.flip;
+  $('tglCkAnalog').checked = !!p.analog;
   $('clockSizeSlider').value = S.widgets.clock.size ?? 100;
   $('tglClockCard').checked = S.widgets.clock.card !== false;
   $('tglDate').checked = S.widgets.clock.date !== false;
@@ -1243,10 +1262,14 @@ function initSettingsPanel() {
     } catch { /* 離線時忽略 */ }
   });
 
-  bind('clockStyleSel', 'change', e => {
-    S.widgets.clock.style = e.target.value;
+  const ckPart = (id, key) => bind(id, 'change', e => {
+    S.widgets.clock.parts[key] = e.target.checked;
     applyClockStyle(); tickClock(); saveSettings();
   });
+  ckPart('tglCkDigital', 'digital');
+  ckPart('tglCkMini', 'minimal');
+  ckPart('tglCkFlip', 'flip');
+  ckPart('tglCkAnalog', 'analog');
   bind('clockSizeSlider', 'input', e => {
     S.widgets.clock.size = +e.target.value;
     applyClockStyle(); saveSettings();
