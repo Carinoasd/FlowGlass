@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "流璃 FlowGlass - 液態玻璃新分頁",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "液態玻璃質感新分頁:自訂圖片/影片桌布、折射玻璃元件、自動取色、時鐘農曆、搜尋、Dock、筆記與番茄鐘。完全離線。",
   "permissions": [
     "storage",

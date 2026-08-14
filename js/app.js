@@ -52,7 +52,7 @@ const DEFAULTS = {
     slideshow: { on: false, mode: 'newtab', minutes: 10 },
   },
   widgets: {
-    clock:    { on: true, seconds: false, h24: true, lunar: true, style: 'digital' },
+    clock:    { on: true, seconds: false, h24: true, lunar: true, style: 'digital', size: 100, card: true, date: true },
     greeting: { on: true, name: '大和' },
     search:   { on: true, engine: 'google', history: true },
     dock:     { on: true },
@@ -499,10 +499,18 @@ function resetLayout() {
 let lastLunarDay = null;
 
 function applyClockStyle() {
-  const st = S.widgets.clock.style || 'digital';
-  $('clockTime').hidden = st !== 'digital';
+  const c = S.widgets.clock;
+  const st = c.style || 'digital';
+  $('clockTime').hidden = st !== 'digital' && st !== 'minimal';
+  $('clockTime').classList.toggle('minimal', st === 'minimal');
   $('clockFlip').hidden = st !== 'flip';
   $('clockAnalog').hidden = st !== 'analog';
+  // 配件:大小 / 玻璃卡片 / 日期行
+  const inner = document.querySelector('#w-clock .w-inner');
+  inner.style.zoom = (c.size ?? 100) / 100;
+  inner.classList.toggle('glass', c.card !== false);
+  inner.classList.toggle('no-card', c.card === false);
+  $('clockDate').hidden = c.date === false;
 }
 
 function buildAnalogTicks() {
@@ -536,7 +544,7 @@ function tickClock() {
   const locale = getLang() === 'zh_TW' ? 'zh-Hant-TW' : 'en-US';
   const style = c.style || 'digital';
 
-  if (style === 'digital') {
+  if (style === 'digital' || style === 'minimal') {
     const opts = { hour: '2-digit', minute: '2-digit', hour12: !c.h24 };
     if (c.seconds) opts.second = '2-digit';
     $('clockTime').textContent = new Intl.DateTimeFormat(locale, opts).format(now);
@@ -722,6 +730,22 @@ function faviconUrl(u) {
   return '/_favicon/?pageUrl=' + encodeURIComponent(u) + '&size=64';
 }
 
+function commitDockOrder() {
+  const ids = [...$('dockGrid').querySelectorAll('.dock-item:not(.dock-add)')]
+    .map(el => el.dataset.id);
+  dock = ids.map(id => dock.find(x => x.id === id)).filter(Boolean);
+  saveJSON(LS_DOCK, dock);
+  renderDock();
+}
+
+function dockDragAfterEl(grid, x, y) {
+  const els = [...grid.querySelectorAll('.dock-item:not(.dragging-item):not(.dock-add)')];
+  return els.find(el => {
+    const r = el.getBoundingClientRect();
+    return y < r.top - 4 || (y < r.bottom + 4 && x < r.left + r.width / 2);
+  }) || null;
+}
+
 function renderDock() {
   const grid = $('dockGrid');
   grid.textContent = '';
@@ -729,12 +753,24 @@ function renderDock() {
     const d = document.createElement('div');
     d.className = 'dock-item';
     d.title = item.url;
+    d.dataset.id = item.id;
+    d.draggable = true;
+    d.addEventListener('dragstart', e => {
+      d.classList.add('dragging-item');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', item.id);
+    });
+    d.addEventListener('dragend', () => {
+      d.classList.remove('dragging-item');
+      commitDockOrder();
+    });
 
     const ico = document.createElement('div');
     ico.className = 'dock-ico';
     const im = document.createElement('img');
     im.src = faviconUrl(item.url);
     im.alt = '';
+    im.draggable = false;
     im.addEventListener('error', () => {
       const mono = document.createElement('div');
       mono.className = 'mono';
@@ -779,6 +815,18 @@ function renderDock() {
   add.append(ico, label);
   add.addEventListener('click', () => openModal(null));
   grid.appendChild(add);
+}
+
+function initDockReorder() {
+  const grid = $('dockGrid');
+  grid.addEventListener('dragover', e => {
+    e.preventDefault();
+    const dragging = grid.querySelector('.dragging-item');
+    if (!dragging) return;
+    const after = dockDragAfterEl(grid, e.clientX, e.clientY);
+    grid.insertBefore(dragging, after ?? grid.querySelector('.dock-add'));
+  });
+  grid.addEventListener('drop', e => e.preventDefault());
 }
 
 const normUrl = u => u.replace(/\/+$/, '').toLowerCase();
@@ -1097,6 +1145,9 @@ function reflectSettings() {
   $('tglWeather').checked = S.widgets.weather.on;
   $('weatherCity').value = S.widgets.weather.place;
   $('clockStyleSel').value = S.widgets.clock.style || 'digital';
+  $('clockSizeSlider').value = S.widgets.clock.size ?? 100;
+  $('tglClockCard').checked = S.widgets.clock.card !== false;
+  $('tglDate').checked = S.widgets.clock.date !== false;
   $('langSelect').value = getLang();
 }
 
@@ -1196,6 +1247,18 @@ function initSettingsPanel() {
     S.widgets.clock.style = e.target.value;
     applyClockStyle(); tickClock(); saveSettings();
   });
+  bind('clockSizeSlider', 'input', e => {
+    S.widgets.clock.size = +e.target.value;
+    applyClockStyle(); saveSettings();
+  });
+  bind('tglClockCard', 'change', e => {
+    S.widgets.clock.card = e.target.checked;
+    applyClockStyle(); saveSettings();
+  });
+  bind('tglDate', 'change', e => {
+    S.widgets.clock.date = e.target.checked;
+    applyClockStyle(); saveSettings();
+  });
 
   bind('exportBtn', 'click', exportSettings);
   bind('importFile', 'change', e => {
@@ -1251,6 +1314,7 @@ async function main() {
   setInterval(updateGreeting, 60000);
   initSearch();
   renderDock();
+  initDockReorder();
   initModal();
   initNotes();
   initPomo();

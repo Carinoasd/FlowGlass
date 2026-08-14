@@ -163,6 +163,13 @@ body.dark-text .greeting-text { text-shadow: 0 1px 10px rgba(255,255,255,.4); }
   font-size: 86px; font-weight: 200; letter-spacing: .04em;
   line-height: 1.04; font-variant-numeric: tabular-nums;
 }
+/* 極簡樣式:小巧純文字 */
+.clock-time.minimal {
+  font-size: 38px; font-weight: 300;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, .45);
+}
+/* 關閉玻璃卡片時縮小留白 */
+#w-clock .w-inner.no-card { padding: 8px 16px; }
 .clock-date { margin-top: 6px; font-size: 17px; color: var(--tx-dim); letter-spacing: .1em; }
 
 /* 翻頁鐘 */
@@ -261,6 +268,7 @@ body.dark-text .greeting-text { text-shadow: 0 1px 10px rgba(255,255,255,.4); }
   transition: transform .18s cubic-bezier(.2, .8, .3, 1.4), background .2s;
 }
 .dock-item:hover { transform: translateY(-5px) scale(1.06); background: rgba(255,255,255,.09); }
+.dock-item.dragging-item { opacity: .35; transform: scale(.95); }
 .dock-ico {
   width: 40px; height: 40px; margin: 0 auto 6px;
   border-radius: 12px; overflow: hidden;
