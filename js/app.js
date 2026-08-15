@@ -635,7 +635,7 @@ let activeSuggest = -1;
 function engineUrl() {
   const id = S.widgets.search.engine;
   if (id === 'wikipedia') {
-    const sub = { zh_TW: 'zh', zh_CN: 'zh', ja: 'ja', ko: 'ko' }[getLang()] || 'en';
+    const sub = ({ zh_TW: 'zh', zh_CN: 'zh' })[getLang()] || getLang();
     return `https://${sub}.wikipedia.org/w/index.php?search=`;
   }
   return ENGINES[id]?.url || ENGINES.google.url;
@@ -1266,7 +1266,7 @@ function initSettingsPanel() {
       return;
     }
     try {
-      const lang = { zh_TW: 'zh', zh_CN: 'zh', ja: 'ja', ko: 'ko' }[getLang()] || 'en';
+      const lang = ({ zh_TW: 'zh', zh_CN: 'zh' })[getLang()] || getLang();
       const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=1&language=${lang}`);
       const d = await r.json();
       if (d.results && d.results[0]) {
