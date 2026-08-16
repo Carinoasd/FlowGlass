@@ -46,7 +46,7 @@ body.no-parallax #wp-layer { transform: none; }
 #wp-layer.fading { opacity: 0; }
 #wp-dim {
   position: absolute; inset: 0;
-  background: #000; opacity: .18;
+  background: #000; opacity: var(--wp-dim, .18);
   pointer-events: none;
   transition: opacity .4s;
 }
@@ -461,6 +461,7 @@ body.dark-text .greeting-text { text-shadow: 0 1px 10px rgba(255,255,255,.4); }
   transition: border-color .2s, color .2s;
 }
 .file-btn:hover { border-color: var(--accent); color: var(--tx); }
+.file-btn.busy { border-color: var(--accent); color: var(--tx); opacity: .75; cursor: progress; }
 
 .thumb-grid {
   display: grid; grid-template-columns: repeat(3, 1fr);
@@ -521,6 +522,8 @@ body.dark-text .greeting-text { text-shadow: 0 1px 10px rgba(255,255,255,.4); }
   background: rgba(255, 255, 255, .14); color: var(--tx); outline: none;
 }
 .modal input:focus { box-shadow: 0 0 0 2px var(--accent-soft); }
+.modal input.invalid { box-shadow: 0 0 0 2px rgba(255, 110, 110, .7); }
+.modal-err { font-size: 12px; color: #ff9b9b; margin: -6px 0 10px; line-height: 1.5; }
 .modal-btns { display: flex; justify-content: flex-end; gap: 10px; margin-top: 6px; }
 
 /* 常用服務快速加入 */

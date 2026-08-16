@@ -1,12 +1,17 @@
 {
   "manifest_version": 3,
-  "name": "流璃 FlowGlass - 液態玻璃新分頁",
-  "version": "1.8.0",
-  "description": "液態玻璃質感新分頁:自訂圖片/影片桌布、折射玻璃元件、自動取色、時鐘農曆、搜尋、Dock、筆記與番茄鐘。完全離線。",
+  "default_locale": "en",
+  "name": "__MSG_extName__",
+  "short_name": "FlowGlass",
+  "version": "1.9.0",
+  "description": "__MSG_extDesc__",
+  "author": "大和",
+  "minimum_chrome_version": "111",
   "permissions": [
     "storage",
     "unlimitedStorage",
-    "favicon"
+    "favicon",
+    "geolocation"
   ],
   "chrome_url_overrides": {
     "newtab": "newtab.html"

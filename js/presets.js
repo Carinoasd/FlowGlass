@@ -3,7 +3,7 @@
 export const PRESETS = [
   {
     id: 'aurora',
-    name: '極光 Aurora',
+    nameKey: 'p.aurora',
     accent: '#6ee7c8',
     bright: false,
     css: `radial-gradient(at 15% 20%, rgba(64, 224, 178, .55) 0, transparent 52%),
@@ -13,7 +13,7 @@ export const PRESETS = [
   },
   {
     id: 'dusk',
-    name: '暮色 Dusk',
+    nameKey: 'p.dusk',
     accent: '#ffab7a',
     bright: false,
     css: `radial-gradient(at 22% 78%, rgba(255, 122, 89, .5) 0, transparent 55%),
@@ -23,7 +23,7 @@ export const PRESETS = [
   },
   {
     id: 'ocean',
-    name: '深海 Ocean',
+    nameKey: 'p.ocean',
     accent: '#67c8ff',
     bright: false,
     css: `radial-gradient(at 30% 25%, rgba(56, 150, 255, .45) 0, transparent 55%),
@@ -32,7 +32,7 @@ export const PRESETS = [
   },
   {
     id: 'neon',
-    name: '霓虹 Neon',
+    nameKey: 'p.neon',
     accent: '#ff7ad0',
     bright: false,
     css: `radial-gradient(at 20% 30%, rgba(255, 60, 172, .42) 0, transparent 50%),
@@ -42,7 +42,7 @@ export const PRESETS = [
   },
   {
     id: 'mist',
-    name: '晨霧 Mist',
+    nameKey: 'p.mist',
     accent: '#5a8fd6',
     bright: true,
     css: `radial-gradient(at 25% 30%, rgba(255, 255, 255, .75) 0, transparent 55%),
@@ -51,7 +51,7 @@ export const PRESETS = [
   },
   {
     id: 'graphite',
-    name: '石墨 Graphite',
+    nameKey: 'p.graphite',
     accent: '#9fb3c8',
     bright: false,
     css: `radial-gradient(at 30% 20%, rgba(120, 135, 155, .3) 0, transparent 55%),

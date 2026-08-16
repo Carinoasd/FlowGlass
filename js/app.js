@@ -1,5 +1,5 @@
 // ============ 流璃 FlowGlass — 主程式 ============
-import { t, setLang, getLang, detectLang, applyI18n, UI_LOCALE } from './i18n.js';
+import { t, setLang, getLang, detectLang, applyI18n, shortLang, UI_LOCALE } from './i18n.js';
 import { putWallpaper, getWallpaper, getAllWallpapers, deleteWallpaper } from './db.js';
 import { lunarInfo } from './lunar.js';
 import { PRESETS, getPreset } from './presets.js';
@@ -11,6 +11,9 @@ const LS_NOTES = 'fg.notes.v1';
 const LS_HISTORY = 'fg.history.v1';
 const LS_SS_INDEX = 'fg.ssIndex';
 
+// 上傳桌布上限:再大就會嚴重拖慢開新分頁,也吃爆硬碟
+const MAX_UPLOAD = 200 * 1024 * 1024;
+
 const ENGINES = {
   google:     { name: 'Google',     badge: 'G',  url: 'https://www.google.com/search?q=' },
   bing:       { name: 'Bing',       badge: 'B',  url: 'https://www.bing.com/search?q=' },
@@ -20,27 +23,36 @@ const ENGINES = {
   wikipedia:  { name: 'Wikipedia',  badge: 'W',  url: null }, // 依語言決定
 };
 
-const DEFAULT_DOCK = [
-  { id: 'd1', title: 'YouTube',  url: 'https://www.youtube.com' },
-  { id: 'd2', title: 'GitHub',   url: 'https://github.com' },
-  { id: 'd3', title: 'Gmail',    url: 'https://mail.google.com' },
-  { id: 'd4', title: '維基百科', url: 'https://zh.wikipedia.org' },
-];
+// 站台清單:key = 需翻譯的服務名,title = 品牌名(各語言相同);wiki = 依語言換子網域
+const SITES = {
+  drive:     { key: 'site.drive',      url: 'https://drive.google.com' },
+  maps:      { key: 'site.maps',       url: 'https://maps.google.com' },
+  translate: { key: 'site.translate',  url: 'https://translate.google.com' },
+  calendar:  { key: 'site.calendar',   url: 'https://calendar.google.com' },
+  photos:    { key: 'site.photos',     url: 'https://photos.google.com' },
+  docs:      { key: 'site.docs',       url: 'https://docs.google.com' },
+  keep:      { title: 'Google Keep',   url: 'https://keep.google.com' },
+  meet:      { title: 'Google Meet',   url: 'https://meet.google.com' },
+  gmail:     { title: 'Gmail',         url: 'https://mail.google.com' },
+  youtube:   { title: 'YouTube',       url: 'https://www.youtube.com' },
+  github:    { title: 'GitHub',        url: 'https://github.com' },
+  wikipedia: { key: 'site.wikipedia',  wiki: true },
+};
+
+const siteTitle = s => (s.key ? t(s.key) : s.title);
+const siteUrl = s => (s.wiki ? `https://${shortLang()}.wikipedia.org` : s.url);
+
+// 首次使用的預設 Dock(語言決定後才產生,所以寫成函式)
+const defaultDock = () => ['youtube', 'github', 'gmail', 'wikipedia'].map((k, i) => ({
+  id: 'd' + (i + 1),
+  title: siteTitle(SITES[k]),
+  url: siteUrl(SITES[k]),
+}));
 
 // 「新增捷徑」視窗裡的常用服務清單(點一下加入,自己選)
-const PRESET_SITES = [
-  { title: '雲端硬碟',    url: 'https://drive.google.com' },
-  { title: 'Google 地圖', url: 'https://maps.google.com' },
-  { title: 'Google 翻譯', url: 'https://translate.google.com' },
-  { title: 'Google 日曆', url: 'https://calendar.google.com' },
-  { title: 'Google 相簿', url: 'https://photos.google.com' },
-  { title: 'Google 文件', url: 'https://docs.google.com' },
-  { title: 'Google Keep', url: 'https://keep.google.com' },
-  { title: 'Google Meet', url: 'https://meet.google.com' },
-  { title: 'Gmail',       url: 'https://mail.google.com' },
-  { title: 'YouTube',     url: 'https://www.youtube.com' },
-  { title: 'GitHub',      url: 'https://github.com' },
-  { title: '維基百科',    url: 'https://zh.wikipedia.org' },
+const PRESET_SITE_KEYS = [
+  'drive', 'maps', 'translate', 'calendar', 'photos', 'docs',
+  'keep', 'meet', 'gmail', 'youtube', 'github', 'wikipedia',
 ];
 
 const DEFAULTS = {
@@ -54,7 +66,7 @@ const DEFAULTS = {
   widgets: {
     clock:    { on: true, seconds: false, h24: true, lunar: true, size: 100, card: true, date: true,
                 parts: { digital: true, minimal: false, flip: false, analog: false } },
-    greeting: { on: true, name: '大和' },
+    greeting: { on: true, name: '' },
     search:   { on: true, engine: 'google', history: true },
     dock:     { on: true },
     notes:    { on: false },
@@ -95,6 +107,20 @@ function debounce(fn, ms) {
   let tm; return (...a) => { clearTimeout(tm); tm = setTimeout(() => fn(...a), ms); };
 }
 
+// 只放行 http/https。缺協定時補 https://。
+// 擋掉 javascript: / data: 之類——新分頁是擴充功能的特權頁面,
+// 而且 dock 可以從匯入的備份檔整包灌進來,不能信任內容。
+function sanitizeUrl(raw) {
+  const s = String(raw ?? '').trim();
+  if (!s) return null;
+  const withProto = /^[a-z][a-z\d+.-]*:/i.test(s) ? s : 'https://' + s;
+  let u;
+  try { u = new URL(withProto); } catch { return null; }
+  if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
+  if (!u.hostname) return null;
+  return u.href;
+}
+
 function hexToRgb(hex) {
   const m = /^#?([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i.exec(hex);
   return m ? [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)] : [122, 184, 255];
@@ -112,17 +138,42 @@ const S = deepMerge(DEFAULTS, loadJSON(LS_SETTINGS, {}));
     delete c.style;
   }
 }
-let dock = loadJSON(LS_DOCK, null) ?? structuredClone(DEFAULT_DOCK);
-// v1.1 曾自動補入 Google 服務,現改為自選制:把當時自動加的項目收回
-if (localStorage.getItem('fg.dockDefaultsV2')) {
-  dock = dock.filter(x => !String(x.id).startsWith('v2d'));
-  localStorage.removeItem('fg.dockDefaultsV2');
-  saveJSON(LS_DOCK, dock);
-}
-let history = loadJSON(LS_HISTORY, []);
+let dock = [];
+let searchHistory = loadJSON(LS_HISTORY, []);
 let library = [];           // IndexedDB 桌布清單
 let currentObjectUrl = null;
 let ssTimer = null;
+
+// 讀入 dock,順手清掉不合法的網址(可能來自舊版或匯入的備份)
+function initDockData() {
+  const saved = loadJSON(LS_DOCK, null);
+  if (!Array.isArray(saved)) {
+    dock = defaultDock();
+    saveJSON(LS_DOCK, dock);
+    return;
+  }
+  dock = sanitizeDock(saved);
+  // v1.1 曾自動補入 Google 服務,現改為自選制:把當時自動加的項目收回
+  if (localStorage.getItem('fg.dockDefaultsV2')) {
+    dock = dock.filter(x => !String(x.id).startsWith('v2d'));
+    localStorage.removeItem('fg.dockDefaultsV2');
+  }
+  if (dock.length !== saved.length) saveJSON(LS_DOCK, dock);
+}
+
+function sanitizeDock(list) {
+  if (!Array.isArray(list)) return [];
+  return list.reduce((out, x) => {
+    const url = x && sanitizeUrl(x.url);
+    if (!url) return out;
+    out.push({
+      id: String(x.id ?? Date.now().toString(36) + out.length),
+      title: String(x.title ?? '').slice(0, 60) || new URL(url).hostname,
+      url,
+    });
+    return out;
+  }, []);
+}
 
 /* ============================================================
    玻璃 / 主題
@@ -264,7 +315,7 @@ async function showWallpaper(fade = false) {
 }
 
 function applyDim() {
-  $('wp-dim').style.opacity = (S.wallpaper.dim / 100).toFixed(2);
+  document.documentElement.style.setProperty('--wp-dim', (S.wallpaper.dim / 100).toFixed(2));
 }
 
 /* ---- 上傳 ---- */
@@ -305,9 +356,21 @@ function makeVideoThumb(blob) {
   });
 }
 
+function setUploadBusy(busy, msg) {
+  const label = document.querySelector('.file-btn span');
+  label.textContent = msg || t('wp.upload');
+  document.querySelector('.file-btn').classList.toggle('busy', busy);
+}
+
 async function handleUpload(file) {
   if (!file) return;
+  if (file.size > MAX_UPLOAD) {
+    setUploadBusy(false, t('wp.tooBig'));
+    setTimeout(() => setUploadBusy(false), 3200);
+    return;
+  }
   const isVideo = file.type.startsWith('video');
+  setUploadBusy(true, t('wp.processing'));
   const thumb = isVideo ? await makeVideoThumb(file) : await makeImageThumb(file);
   const rec = {
     id: Date.now().toString(36),
@@ -324,6 +387,7 @@ async function handleUpload(file) {
   saveSettings();
   renderLibrary();
   showWallpaper(true);
+  setUploadBusy(false);
 }
 
 /* ---- 縮圖庫 ---- */
@@ -335,9 +399,9 @@ function renderPresets() {
     d.className = 'thumb';
     d.dataset.preset = p.id;
     d.style.background = p.css;
-    d.title = p.name;
+    d.title = t(p.nameKey);
     const nm = document.createElement('span');
-    nm.className = 'th-name'; nm.textContent = p.name;
+    nm.className = 'th-name'; nm.textContent = t(p.nameKey);
     d.appendChild(nm);
     d.addEventListener('click', () => {
       S.wallpaper.kind = 'preset';
@@ -401,29 +465,38 @@ function markSelectedThumbs() {
 }
 
 /* ---- 輪播 ---- */
-function slideshowPool() { return library.map(r => r.id); }
+// 自己上傳的桌布優先;一張都沒上傳時就輪內建預設,免得開了輪播卻毫無反應
+function slideshowPool() {
+  return library.length > 0
+    ? library.map(r => ({ kind: 'custom', id: r.id }))
+    : PRESETS.map(p => ({ kind: 'preset', id: p.id }));
+}
 
 function advanceSlideshow(fade) {
   const pool = slideshowPool();
-  if (pool.length < 1) return;
+  if (pool.length < 2) return false;
   let idx = parseInt(localStorage.getItem(LS_SS_INDEX) || '-1', 10);
   idx = (idx + 1) % pool.length;
   localStorage.setItem(LS_SS_INDEX, String(idx));
-  S.wallpaper.kind = 'custom';
-  S.wallpaper.customId = pool[idx];
+  const pick = pool[idx];
+  S.wallpaper.kind = pick.kind;
+  if (pick.kind === 'custom') S.wallpaper.customId = pick.id;
+  else S.wallpaper.presetId = pick.id;
   saveSettings();
   showWallpaper(fade);
+  return true;
 }
 
+// 回傳 true 表示已經自己換過桌布了,呼叫端不必再畫一次
 function setupSlideshow(initial = false) {
   clearInterval(ssTimer); ssTimer = null;
   const ss = S.wallpaper.slideshow;
-  if (!ss.on) return;
+  if (!ss.on) return false;
   if (ss.mode === 'newtab') {
-    if (initial && slideshowPool().length > 0) advanceSlideshow(false);
-  } else {
-    ssTimer = setInterval(() => advanceSlideshow(true), Math.max(1, ss.minutes) * 60000);
+    return initial ? advanceSlideshow(false) : false;
   }
+  ssTimer = setInterval(() => advanceSlideshow(true), Math.max(1, ss.minutes) * 60000);
+  return false;
 }
 
 /* ============================================================
@@ -511,6 +584,35 @@ function resetLayout() {
    時鐘 / 問候
    ============================================================ */
 let lastLunarDay = null;
+let lastDateText = '';
+
+// Intl.DateTimeFormat 建構成本不低,而 tickClock 每秒跑一次 → 快取起來,
+// 語言或時鐘設定變動時再丟掉重建。
+let fmtCache = { key: '', time: null, date: null };
+
+function clockFormatters() {
+  const c = S.widgets.clock;
+  const locale = UI_LOCALE[getLang()] || 'en-US';
+  const key = `${locale}|${c.h24}|${c.seconds}`;
+  if (fmtCache.key !== key) {
+    const opts = { hour: '2-digit', minute: '2-digit', hour12: !c.h24 };
+    if (c.seconds) opts.second = '2-digit';
+    fmtCache = {
+      key,
+      time: new Intl.DateTimeFormat(locale, opts),
+      date: new Intl.DateTimeFormat(locale, {
+        year: 'numeric', month: 'long', day: 'numeric', weekday: 'long',
+      }),
+    };
+  }
+  return fmtCache;
+}
+
+function invalidateFormatters() {
+  fmtCache.key = '';
+  lastDateText = '';
+  lastLunarDay = null;
+}
 
 function applyClockStyle() {
   const c = S.widgets.clock;
@@ -561,13 +663,11 @@ function setFlip(id, val) {
 function tickClock() {
   const now = new Date();
   const c = S.widgets.clock;
-  const locale = UI_LOCALE[getLang()] || 'en-US';
+  const fmt = clockFormatters();
   const p = c.parts || { digital: true };
 
   if (p.digital || p.minimal) {
-    const opts = { hour: '2-digit', minute: '2-digit', hour12: !c.h24 };
-    if (c.seconds) opts.second = '2-digit';
-    const txt = new Intl.DateTimeFormat(locale, opts).format(now);
+    const txt = fmt.time.format(now);
     if (p.digital) $('clockTime').textContent = txt;
     if (p.minimal) $('clockMini').textContent = txt;
   }
@@ -595,9 +695,11 @@ function tickClock() {
     $('fc2S').hidden = $('fc2Ssep').hidden = !c.seconds;
     if (c.seconds) setFlip('fc2S', String(now.getSeconds()).padStart(2, '0'));
   }
-  $('clockDate').textContent = new Intl.DateTimeFormat(locale, {
-    year: 'numeric', month: 'long', day: 'numeric', weekday: 'long',
-  }).format(now);
+  const dateText = fmt.date.format(now);
+  if (dateText !== lastDateText) {
+    lastDateText = dateText;
+    $('clockDate').textContent = dateText;
+  }
 
   const lunarEl = $('clockLunar');
   if (c.lunar) {
@@ -635,8 +737,7 @@ let activeSuggest = -1;
 function engineUrl() {
   const id = S.widgets.search.engine;
   if (id === 'wikipedia') {
-    const sub = ({ zh_TW: 'zh', zh_CN: 'zh' })[getLang()] || getLang();
-    return `https://${sub}.wikipedia.org/w/index.php?search=`;
+    return `https://${shortLang()}.wikipedia.org/w/index.php?search=`;
   }
   return ENGINES[id]?.url || ENGINES.google.url;
 }
@@ -672,8 +773,8 @@ function doSearch(q) {
   q = q.trim();
   if (!q) return;
   if (S.widgets.search.history) {
-    history = [q, ...history.filter(x => x !== q)].slice(0, 60);
-    saveJSON(LS_HISTORY, history);
+    searchHistory = [q, ...searchHistory.filter(x => x !== q)].slice(0, 60);
+    saveJSON(LS_HISTORY, searchHistory);
   }
   location.href = engineUrl() + encodeURIComponent(q);
 }
@@ -681,15 +782,15 @@ function doSearch(q) {
 function renderSuggests() {
   const ul = $('suggestList');
   const q = $('searchInput').value.trim().toLowerCase();
-  if (!S.widgets.search.history || history.length === 0) {
+  if (!S.widgets.search.history || searchHistory.length === 0) {
     ul.classList.add('hidden'); return;
   }
   let items;
   if (!q) {
-    items = history.slice(0, 8);
+    items = searchHistory.slice(0, 8);
   } else {
-    const starts = history.filter(h => h.toLowerCase().startsWith(q));
-    const incl = history.filter(h => !h.toLowerCase().startsWith(q) && h.toLowerCase().includes(q));
+    const starts = searchHistory.filter(h => h.toLowerCase().startsWith(q));
+    const incl = searchHistory.filter(h => !h.toLowerCase().startsWith(q) && h.toLowerCase().includes(q));
     items = [...starts, ...incl].slice(0, 8);
   }
   ul.textContent = '';
@@ -866,19 +967,21 @@ function renderSuggestChips() {
   const wrap = $('suggestGrid');
   wrap.textContent = '';
   const have = new Set(dock.map(x => normUrl(x.url)));
-  for (const p of PRESET_SITES) {
-    if (have.has(normUrl(p.url))) continue;
+  for (const key of PRESET_SITE_KEYS) {
+    const site = SITES[key];
+    const title = siteTitle(site), url = siteUrl(site);
+    if (have.has(normUrl(url))) continue;
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'sug-chip';
     const im = document.createElement('img');
-    im.src = faviconUrl(p.url);
+    im.src = faviconUrl(url);
     im.alt = '';
     im.addEventListener('error', () => im.remove());
     b.appendChild(im);
-    b.appendChild(document.createTextNode(p.title));
+    b.appendChild(document.createTextNode(title));
     b.addEventListener('click', () => {
-      dock.push({ id: Date.now().toString(36), title: p.title, url: p.url });
+      dock.push({ id: Date.now().toString(36), title, url });
       saveJSON(LS_DOCK, dock);
       renderDock();
       renderSuggestChips();
@@ -901,6 +1004,14 @@ function openModal(item) {
 
 function closeModal() {
   $('modalBackdrop').classList.add('hidden');
+  showModalError('');
+}
+
+function showModalError(msg) {
+  const el = $('modalErr');
+  el.textContent = msg;
+  el.classList.toggle('hidden', !msg);
+  $('modalUrl').classList.toggle('invalid', !!msg);
 }
 
 function initModal() {
@@ -910,14 +1021,14 @@ function initModal() {
   });
   $('modalOk').addEventListener('click', () => {
     const title = $('modalName').value.trim();
-    let url = $('modalUrl').value.trim();
-    if (!url) return;
-    if (!/^[a-z]+:\/\//i.test(url)) url = 'https://' + url;
+    const url = sanitizeUrl($('modalUrl').value);
+    if (!url) { showModalError(t('url.invalid')); return; }
+    const name = title || new URL(url).hostname;
     if (modalEditId) {
       const it = dock.find(x => x.id === modalEditId);
-      if (it) { it.title = title || new URL(url).hostname; it.url = url; }
+      if (it) { it.title = name; it.url = url; }
     } else {
-      dock.push({ id: Date.now().toString(36), title: title || new URL(url).hostname, url });
+      dock.push({ id: Date.now().toString(36), title: name, url });
     }
     saveJSON(LS_DOCK, dock);
     renderDock();
@@ -1077,6 +1188,9 @@ async function loadWeather(force = false) {
     if (lat == null || lon == null) {
       const g = await geolocate();
       lat = g.lat; lon = g.lon; place = '';
+      // 存回設定,否則每次快取過期都要再要一次定位權限
+      w.lat = lat; w.lon = lon; w.place = '';
+      saveSettings();
     }
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
       `&current=temperature_2m,relative_humidity_2m,weather_code` +
@@ -1108,7 +1222,7 @@ async function loadWeather(force = false) {
 function exportSettings() {
   const data = {
     app: 'flowglass', v: 1,
-    settings: S, dock, history,
+    settings: S, dock, history: searchHistory,
     notes: localStorage.getItem(LS_NOTES) || '',
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -1125,8 +1239,11 @@ async function importSettings(file) {
     const d = JSON.parse(await file.text());
     if (d.app !== 'flowglass') throw new Error('not a flowglass backup');
     if (d.settings) saveJSON(LS_SETTINGS, deepMerge(DEFAULTS, d.settings));
-    if (Array.isArray(d.dock)) saveJSON(LS_DOCK, d.dock);
-    if (Array.isArray(d.history)) saveJSON(LS_HISTORY, d.history);
+    // 備份檔可能來自別人,dock 網址一律重新驗證過才寫回
+    if (Array.isArray(d.dock)) saveJSON(LS_DOCK, sanitizeDock(d.dock));
+    if (Array.isArray(d.history)) {
+      saveJSON(LS_HISTORY, d.history.filter(x => typeof x === 'string').slice(0, 60));
+    }
     if (typeof d.notes === 'string') localStorage.setItem(LS_NOTES, d.notes);
     location.reload();
   } catch { /* 格式不對就不動現有設定 */ }
@@ -1242,6 +1359,7 @@ function initSettingsPanel() {
   const wtoggle = (id, key, sub) => bind(id, 'change', e => {
     if (sub) S.widgets[key][sub] = e.target.checked;
     else S.widgets[key].on = e.target.checked;
+    invalidateFormatters();      // 秒數/24 小時制會換掉時間格式
     applyWidgetVisibility(); tickClock(); saveSettings();
   });
   wtoggle('tglClock', 'clock');
@@ -1266,8 +1384,7 @@ function initSettingsPanel() {
       return;
     }
     try {
-      const lang = ({ zh_TW: 'zh', zh_CN: 'zh' })[getLang()] || getLang();
-      const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=1&language=${lang}`);
+      const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=1&language=${shortLang()}`);
       const d = await r.json();
       if (d.results && d.results[0]) {
         const g = d.results[0];
@@ -1323,7 +1440,9 @@ function initSettingsPanel() {
     updateGreeting(); saveSettings();
   });
   bind('clearHistoryBtn', 'click', () => {
-    history = []; saveJSON(LS_HISTORY, history);
+    searchHistory = [];
+    saveJSON(LS_HISTORY, searchHistory);
+    renderSuggests();
   });
 
   // 版面 / 語言
@@ -1332,7 +1451,9 @@ function initSettingsPanel() {
     S.lang = e.target.value;
     setLang(S.lang);
     applyI18n();
+    invalidateFormatters();
     tickClock(); updateGreeting(); renderDock(); pomoRender();
+    renderPresets(); markSelectedThumbs();
     if (lastWx) renderWeather(lastWx);
     saveSettings();
   });
@@ -1342,18 +1463,23 @@ function initSettingsPanel() {
    啟動
    ============================================================ */
 async function main() {
-  // 語言
+  // 語言(要先定,dock 預設值與桌布名稱都靠它)
   setLang(S.lang || detectLang());
   S.lang = getLang();
   applyI18n();
+  initDockData();
+
+  // 版本號直接讀 manifest,不用手動同步
+  const ver = globalThis.chrome?.runtime?.getManifest?.().version;
+  if (ver) $('aboutLine').textContent = `流璃 FlowGlass v${ver} · Liquid Glass New Tab`;
 
   // 玻璃 / 主題 / 桌布
   applyGlass();
   if (!S.theme.auto) applyAccent(S.theme.accent);
   applyDim();
   library = await getAllWallpapers();
-  setupSlideshow(true);      // newtab 模式會先轉一張
-  await showWallpaper(false);
+  // newtab 模式的輪播會自己換一張並繪製,那就不用再畫第二次
+  if (!setupSlideshow(true)) await showWallpaper(false);
 
   // 元件
   applyWidgetVisibility();

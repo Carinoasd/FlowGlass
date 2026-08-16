@@ -6,7 +6,9 @@
 <title>流璃 FlowGlass</title>
 <link rel="stylesheet" href="css/styles.css">
 </head>
-<body class="entrance edge refract parallax">
+<body>
+<!-- 同步套用外觀設定,避免首次繪製閃爍(必須在其他內容之前) -->
+<script src="js/boot.js"></script>
 
 <!-- SVG 濾鏡:液態玻璃折射鏈 (turbulence → displacement → blur → saturate) -->
 <svg id="fg-defs" width="0" height="0" aria-hidden="true">
@@ -36,14 +38,14 @@
 
   <section class="widget" id="w-greeting" data-w="greeting" style="--delay:.05s">
     <div class="w-inner">
-      <button class="drag-handle" title="拖拉移動">⠿</button>
+      <button class="drag-handle" data-i18n-title="ui.drag">⠿</button>
       <div id="greetingText" class="greeting-text"></div>
     </div>
   </section>
 
   <section class="widget" id="w-clock" data-w="clock" style="--delay:.1s">
     <div class="w-inner glass">
-      <button class="drag-handle" title="拖拉移動">⠿</button>
+      <button class="drag-handle" data-i18n-title="ui.drag">⠿</button>
       <div id="clockTime" class="clock-time">--:--</div>
       <div id="clockMini" class="clock-mini" hidden>--:--</div>
       <div id="clockFlip" class="clock-flip" hidden>
@@ -68,7 +70,7 @@
 
   <section class="widget" id="w-clock2" data-w="clock2" style="--delay:.14s">
     <div class="w-inner glass clock2">
-      <button class="drag-handle" title="拖拉移動">⠿</button>
+      <button class="drag-handle" data-i18n-title="ui.drag">⠿</button>
       <div class="clock-flip">
         <div class="flip-card" id="fc2H"><span>--</span></div>
         <div class="flip-sep">:</div>
@@ -81,7 +83,7 @@
 
   <section class="widget" id="w-search" data-w="search" style="--delay:.18s">
     <div class="w-inner glass search-box">
-      <button class="drag-handle" title="拖拉移動">⠿</button>
+      <button class="drag-handle" data-i18n-title="ui.drag">⠿</button>
       <form id="searchForm" autocomplete="off">
         <button type="button" id="engineBtn" class="engine-btn" title=""></button>
         <input id="searchInput" type="text" data-i18n-ph="search.ph" placeholder="搜尋…">
@@ -96,14 +98,14 @@
 
   <section class="widget" id="w-dock" data-w="dock" style="--delay:.26s">
     <div class="w-inner glass dock">
-      <button class="drag-handle" title="拖拉移動">⠿</button>
+      <button class="drag-handle" data-i18n-title="ui.drag">⠿</button>
       <div id="dockGrid" class="dock-grid"></div>
     </div>
   </section>
 
   <section class="widget" id="w-notes" data-w="notes" style="--delay:.34s">
     <div class="w-inner glass notes">
-      <button class="drag-handle" title="拖拉移動">⠿</button>
+      <button class="drag-handle" data-i18n-title="ui.drag">⠿</button>
       <div class="w-title" data-i18n="w.notes">快速筆記</div>
       <textarea id="notesArea" data-i18n-ph="notes.ph" placeholder="隨手記點什麼…"></textarea>
     </div>
@@ -111,7 +113,7 @@
 
   <section class="widget" id="w-weather" data-w="weather" style="--delay:.5s">
     <div class="w-inner glass weather">
-      <button class="drag-handle" title="拖拉移動">⠿</button>
+      <button class="drag-handle" data-i18n-title="ui.drag">⠿</button>
       <div class="w-title" data-i18n="w.weather">天氣</div>
       <div id="weatherBody" class="weather-body">
         <div id="weatherIcon" class="weather-ico">☀️</div>
@@ -127,7 +129,7 @@
 
   <section class="widget" id="w-pomo" data-w="pomo" style="--delay:.42s">
     <div class="w-inner glass pomo">
-      <button class="drag-handle" title="拖拉移動">⠿</button>
+      <button class="drag-handle" data-i18n-title="ui.drag">⠿</button>
       <div class="w-title" data-i18n="w.pomo">番茄鐘</div>
       <div class="pomo-ring-wrap">
         <svg viewBox="0 0 120 120" class="pomo-svg">
@@ -153,7 +155,7 @@
 </main>
 
 <!-- 設定按鈕 -->
-<button id="settingsBtn" class="glass fab" title="設定">
+<button id="settingsBtn" class="glass fab" data-i18n-title="settings.title">
   <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7Zm7.4-2.6c.05-.3.08-.6.08-.9s-.03-.6-.08-.9l2-1.6a.5.5 0 0 0 .12-.64l-1.9-3.3a.5.5 0 0 0-.6-.22l-2.4.96a7.3 7.3 0 0 0-1.55-.9l-.36-2.54a.5.5 0 0 0-.5-.43h-3.8a.5.5 0 0 0-.5.43l-.36 2.54c-.56.23-1.08.53-1.56.9l-2.4-.96a.5.5 0 0 0-.6.22l-1.9 3.3a.5.5 0 0 0 .13.64l2 1.6c-.05.3-.08.6-.08.9s.03.6.08.9l-2 1.6a.5.5 0 0 0-.12.64l1.9 3.3c.13.22.39.31.6.22l2.4-.96c.47.37 1 .67 1.55.9l.36 2.54c.04.25.25.43.5.43h3.8c.25 0 .46-.18.5-.43l.36-2.54c.56-.23 1.08-.53 1.55-.9l2.4.96c.22.09.48 0 .6-.22l1.9-3.3a.5.5 0 0 0-.12-.64l-2-1.6Z"/></svg>
 </button>
 
@@ -161,7 +163,7 @@
 <aside id="settingsPanel" class="glass hidden">
   <header class="sp-head">
     <h2 data-i18n="settings.title">設定</h2>
-    <button id="settingsClose" class="sp-close">✕</button>
+    <button id="settingsClose" class="sp-close" aria-label="Close">✕</button>
   </header>
   <div class="sp-body">
 
@@ -274,7 +276,7 @@
       </div>
     </details>
 
-    <div class="sp-about">流璃 FlowGlass v1.0 · Liquid Glass New Tab</div>
+    <div id="aboutLine" class="sp-about">流璃 FlowGlass · Liquid Glass New Tab</div>
   </div>
 </aside>
 
@@ -288,6 +290,7 @@
     </div>
     <label><span data-i18n="dock.title">名稱</span><input id="modalName" type="text" maxlength="30"></label>
     <label><span data-i18n="dock.url">網址</span><input id="modalUrl" type="text" placeholder="https://"></label>
+    <div id="modalErr" class="modal-err hidden"></div>
     <div class="modal-btns">
       <button id="modalCancel" class="mini-btn" data-i18n="cancel">取消</button>
       <button id="modalOk" class="mini-btn primary" data-i18n="ok">確定</button>
