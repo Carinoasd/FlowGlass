@@ -1,41 +1,43 @@
-# 流璃 FlowGlass — 液態玻璃新分頁
+# FlowGlass — Liquid Glass New Tab
 
-液態玻璃質感的 Chrome 新分頁。資料只存在你的電腦;除選用的天氣功能(Open-Meteo)外完全離線,沒有任何分析、追蹤或廣告程式碼。
+*[繁體中文說明](README.zh-TW.md)*
 
-## 功能
+A liquid-glass new tab page for Chrome. Everything stays on your machine — apart from the optional weather widget (Open-Meteo), it works fully offline, with no analytics, tracking, or ad code of any kind.
 
-- **桌布** — 自訂圖片/影片(上限 200 MB)、6 組內建漸層、輪播(每次開新分頁或定時)、背景暗度
-- **玻璃效果** — SVG 折射濾鏡鏈、模糊/不透明度/折射強度、邊緣高光、滑鼠視差、入場動畫
-- **主題色** — 從桌布自動取色,或手動指定
-- **時鐘** — 數位/極簡/翻頁/指針四種可自由堆疊,另有獨立的翻頁小時鐘;農曆與節日、大小與玻璃卡片可調
-- **搜尋** — Google / Bing / DuckDuckGo / Yahoo / YouTube / 維基百科,含本機搜尋歷史建議
-- **捷徑 Dock** — 可拖曳排序、常用服務一鍵加入、自動抓 favicon
-- **其他** — 快速筆記、番茄鐘、天氣、設定匯出/匯入、元件自由拖拉擺位
-- **11 種語言** — 繁中/簡中/日/韓/英/西/法/德/葡/俄/越,首次啟動自動偵測
+## Features
 
-## 安裝方法
+- **Wallpaper** — your own images or video (200 MB max), 6 built-in gradients, slideshow (on every new tab or on a timer), adjustable dimming
+- **Glass** — SVG refraction filter chain, adjustable blur / opacity / refraction, edge highlights, mouse parallax, entrance animation
+- **Theme color** — sampled automatically from the wallpaper, or pick your own
+- **Clock** — digital, minimal, flip and analog faces that can be stacked freely, plus a standalone flip clock; adjustable size and optional glass card
+- **Search** — Google, Bing, DuckDuckGo, Yahoo, YouTube, Wikipedia, with on-device history suggestions
+- **Shortcut dock** — drag to reorder, one-click add for common services, automatic favicons
+- **More** — quick notes, Pomodoro timer, weather, settings export/import, drag any widget anywhere
+- **11 languages** — English, 繁體中文, 简体中文, 日本語, 한국어, Español, Français, Deutsch, Português, Русский, Tiếng Việt — detected automatically on first run
 
-1. 解壓縮這個 ZIP 到任意資料夾(裝好後資料夾不能刪)
-2. 開 Chrome,網址列輸入 `chrome://extensions` 按 Enter
-3. 開啟右上角「開發人員模式」
-4. 點左上角「載入未封裝項目」,選剛剛解壓的 `FlowGlass` 資料夾
-5. 按 Ctrl+T 開新分頁即生效
+## Install
 
-> Chrome 之後啟動時可能跳出「停用開發人員模式擴充功能」提醒,按「保留」即可,這是未上架商店擴充功能的正常現象。
+1. Unzip this folder anywhere you like (keep the folder — deleting it uninstalls the extension)
+2. Open Chrome and go to `chrome://extensions`
+3. Turn on **Developer mode** (top right)
+4. Click **Load unpacked** (top left) and select the `FlowGlass` folder
+5. Press Ctrl+T to open a new tab
 
-需要 Chrome 111 以上版本。
+> Chrome may show a "Disable developer mode extensions" prompt on later startups. Choose **Keep** — this is normal for extensions not installed from the Web Store.
 
-## 使用
+Requires Chrome 111 or newer.
 
-- 右下角齒輪 = 設定面板:換桌布、調玻璃效果、主題色、開關元件、切換語言
-- 滑鼠移到元件上,抓「⠿」可拖拉擺位;設定面板的「重設佈局」可還原
-- 所有設定與桌布都存在本機(localStorage + IndexedDB),不連任何外部服務
-- 天氣預設關閉。開啟後可留空城市自動定位(需允許定位權限),或手動輸入城市名
+## Usage
 
-## 隱私
+- The gear button in the bottom right opens the settings panel: wallpaper, glass effects, theme color, widget toggles and language
+- Hover a widget and grab the `⠿` handle to drag it anywhere; **Reset layout** in the settings panel restores the defaults
+- All settings and wallpapers live in your browser's local storage (localStorage + IndexedDB) and are never sent anywhere
+- Weather is off by default. Once enabled, leave the city blank to use your location (requires the location permission) or type a city name
 
-見 [PRIVACY.md](PRIVACY.md)。簡短版:不蒐集、不儲存、不傳輸、不出售任何個人資料。
+## Privacy
 
-## 授權
+See [PRIVACY.md](PRIVACY.md). Short version: no personal data is collected, stored, transmitted, or sold.
+
+## License
 
 MIT License

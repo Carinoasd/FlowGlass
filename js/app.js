@@ -64,7 +64,8 @@ const DEFAULTS = {
     slideshow: { on: false, mode: 'newtab', minutes: 10 },
   },
   widgets: {
-    clock:    { on: true, seconds: false, h24: true, lunar: true, size: 100, card: true, date: true,
+    // lunar: null = 還沒決定過,啟動時依介面語言決定(農曆字串只有中文,見 main())
+    clock:    { on: true, seconds: false, h24: true, lunar: null, size: 100, card: true, date: true,
                 parts: { digital: true, minimal: false, flip: false, analog: false } },
     greeting: { on: true, name: '' },
     search:   { on: true, engine: 'google', history: true },
@@ -1468,6 +1469,19 @@ async function main() {
   S.lang = getLang();
   applyI18n();
   initDockData();
+
+  // 農曆輸出永遠是中文(「農曆七月初四」),對其他語言的使用者只是看不懂的字。
+  // 所以只在中文介面預設開啟;想要的人仍可自己在設定面板打開。
+  // v1.9.0 以前不分語言一律預設開啟,因此非中文介面做一次性關閉。
+  const zhUI = getLang().startsWith('zh');
+  if (S.widgets.clock.lunar === null) {
+    S.widgets.clock.lunar = zhUI;
+    saveSettings();
+  } else if (!zhUI && !localStorage.getItem('fg.lunarDefaultV3')) {
+    S.widgets.clock.lunar = false;
+    saveSettings();
+  }
+  localStorage.setItem('fg.lunarDefaultV3', '1');
 
   // 版本號直接讀 manifest,不用手動同步
   const ver = globalThis.chrome?.runtime?.getManifest?.().version;
