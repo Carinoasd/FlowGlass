@@ -101,7 +101,16 @@ const saveJSON = (key, v) => localStorage.setItem(key, JSON.stringify(v));
 let saveTimer = null;
 function saveSettings() {
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => saveJSON(LS_SETTINGS, S), 250);
+  saveTimer = setTimeout(() => { saveTimer = null; saveJSON(LS_SETTINGS, S); }, 250);
+}
+
+// 立刻寫入,不等 debounce。新分頁的壽命可能只有幾十毫秒
+// (Ctrl+T 之後馬上輸入網址就離開),等 250ms 會直接掉設定。
+function flushSettings() {
+  if (saveTimer === null) return;
+  clearTimeout(saveTimer);
+  saveTimer = null;
+  saveJSON(LS_SETTINGS, S);
 }
 
 function debounce(fn, ms) {
@@ -1473,15 +1482,19 @@ async function main() {
   // 農曆輸出永遠是中文(「農曆七月初四」),對其他語言的使用者只是看不懂的字。
   // 所以只在中文介面預設開啟;想要的人仍可自己在設定面板打開。
   // v1.9.0 以前不分語言一律預設開啟,因此非中文介面做一次性關閉。
+  // 注意:設定必須跟旗標一起同步寫入。用 debounce 的 saveSettings() 的話,
+  // 分頁在 250ms 內被關掉會變成「旗標已寫、設定沒寫」,遷移就永遠不會再跑。
   const zhUI = getLang().startsWith('zh');
   if (S.widgets.clock.lunar === null) {
     S.widgets.clock.lunar = zhUI;
-    saveSettings();
+    saveJSON(LS_SETTINGS, S);
   } else if (!zhUI && !localStorage.getItem('fg.lunarDefaultV3')) {
     S.widgets.clock.lunar = false;
-    saveSettings();
+    saveJSON(LS_SETTINGS, S);
   }
-  localStorage.setItem('fg.lunarDefaultV3', '1');
+  if (!localStorage.getItem('fg.lunarDefaultV3')) {
+    localStorage.setItem('fg.lunarDefaultV3', '1');
+  }
 
   // 版本號直接讀 manifest,不用手動同步
   const ver = globalThis.chrome?.runtime?.getManifest?.().version;
@@ -1510,6 +1523,12 @@ async function main() {
   initModal();
   initNotes();
   initPomo();
+
+  // 分頁隨時可能被關掉或丟進背景,離開前把還在 debounce 裡的設定補寫完
+  window.addEventListener('pagehide', flushSettings);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') flushSettings();
+  });
 
   // 佈局 / 視差 / 面板
   applyLayout();

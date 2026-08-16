@@ -3,7 +3,7 @@
   "default_locale": "en",
   "name": "__MSG_extName__",
   "short_name": "FlowGlass",
-  "version": "1.9.1",
+  "version": "1.9.2",
   "description": "__MSG_extDesc__",
   "author": "大和",
   "minimum_chrome_version": "111",
